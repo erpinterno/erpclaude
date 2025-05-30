@@ -1,23 +1,41 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './core/guards/auth.guard';
+import { AuthGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
+  // Rota padrão - redireciona para login
+  {
+    path: '',
+    redirectTo: '/login',
+    pathMatch: 'full'
+  },
+
+  // Login (público)
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },
+
+  // Layout principal com menu lateral (protegido)
   {
     path: '',
     loadComponent: () => import('./layouts/main-layout/main-layout.component').then(m => m.MainLayoutComponent),
-    canActivate: [authGuard],
+    canActivate: [AuthGuard],
     children: [
+      // Dashboard
       {
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       },
+
+      // Módulo Financeiro
       {
         path: 'financeiro',
         children: [
+          {
+            path: '',
+            redirectTo: 'contas-pagar',
+            pathMatch: 'full'
+          },
           {
             path: 'contas-pagar',
             loadComponent: () => import('./features/financeiro/contas-pagar/contas-pagar.component').then(m => m.ContasPagarComponent)
@@ -36,6 +54,32 @@ export const routes: Routes = [
           }
         ]
       },
+
+      // Módulo Configuração
+      {
+        path: 'configuracao',
+        children: [
+          {
+            path: '',
+            redirectTo: 'usuarios',
+            pathMatch: 'full'
+          },
+          {
+            path: 'usuarios',
+            loadComponent: () => import('./features/configuracao/usuarios/usuarios.component').then(m => m.UsuariosComponent)
+          },
+          {
+            path: 'perfis',
+            loadComponent: () => import('./features/configuracao/perfis/perfis.component').then(m => m.PerfisComponent)
+          },
+          {
+            path: 'sistema',
+            loadComponent: () => import('./features/configuracao/sistema/sistema.component').then(m => m.SistemaComponent)
+          }
+        ]
+      },
+
+      // Redireciona para dashboard se não especificado
       {
         path: '',
         redirectTo: 'dashboard',
@@ -43,9 +87,10 @@ export const routes: Routes = [
       }
     ]
   },
+
+  // Página não encontrada
   {
-    path: '',
-    redirectTo: 'login',
-    pathMatch: 'full'
+    path: '**',
+    redirectTo: '/login'
   }
 ];

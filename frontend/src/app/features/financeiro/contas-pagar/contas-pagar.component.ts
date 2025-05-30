@@ -1,6 +1,6 @@
-﻿import { Component, OnInit, ViewChild } from '@angular/core';
+﻿import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
 import { MatSortModule, MatSort } from '@angular/material/sort';
@@ -16,6 +16,7 @@ import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 interface ContaPagar {
   id: number;
@@ -47,7 +48,9 @@ interface ContaPagar {
     MatNativeDateModule,
     MatDialogModule,
     MatSnackBarModule,
-    MatChipsModule
+    MatChipsModule,
+    MatMenuModule,
+    MatTooltipModule
   ],
   template: `
     <div class="container">
@@ -89,7 +92,7 @@ interface ContaPagar {
             <table mat-table [dataSource]="dataSource" matSort>
 
               <ng-container matColumnDef="descricao">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>DescriÃ§Ã£o</th>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Descrição</th>
                 <td mat-cell *matCellDef="let conta">{{conta.descricao}}</td>
               </ng-container>
 
@@ -118,10 +121,11 @@ interface ContaPagar {
               </ng-container>
 
               <ng-container matColumnDef="acoes">
-                <th mat-header-cell *matHeaderCellDef>AÃ§Ãµes</th>
+                <th mat-header-cell *matHeaderCellDef>Ações</th>
                 <td mat-cell *matCellDef="let conta">
-                  <button mat-icon-button [matMenuTriggerFor]="menu" 
-                          aria-label="AÃ§Ãµes">
+                  <button mat-icon-button [matMenuTriggerFor]="menu"
+                          aria-label="Ações"
+                          matTooltip="Ações">
                     <mat-icon>more_vert</mat-icon>
                   </button>
                   <mat-menu #menu="matMenu">
@@ -164,10 +168,13 @@ interface ContaPagar {
     .container {
       max-width: 1200px;
       margin: 0 auto;
+      padding: 20px;
     }
 
     h1 {
       margin: 0;
+      color: #333;
+      font-weight: 500;
     }
 
     .filters {
@@ -175,83 +182,216 @@ interface ContaPagar {
       gap: 20px;
       margin-bottom: 20px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .filters mat-form-field {
       flex: 1;
       min-width: 200px;
+      max-width: 300px;
+    }
+
+    .filters button {
+      height: 56px;
+      min-width: 140px;
     }
 
     .table-container {
       overflow-x: auto;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
     }
 
     table {
       width: 100%;
+      min-width: 800px;
+    }
+
+    th {
+      font-weight: 600;
+      color: #333;
+      background-color: #f5f5f5;
+    }
+
+    td {
+      padding: 12px 8px;
     }
 
     .empty-state {
       text-align: center;
       padding: 40px;
       opacity: 0.6;
+      font-style: italic;
     }
 
     .status-pendente {
       background-color: #ff9800 !important;
+      color: white !important;
     }
 
     .status-pago {
       background-color: #4caf50 !important;
+      color: white !important;
     }
 
     .status-vencido {
       background-color: #f44336 !important;
+      color: white !important;
     }
 
     .status-cancelado {
       background-color: #9e9e9e !important;
+      color: white !important;
+    }
+
+    mat-chip {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      min-height: 24px;
+    }
+
+    mat-card {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    mat-card-header {
+      margin-bottom: 20px;
+    }
+
+    .mat-mdc-menu-panel {
+      min-width: 180px !important;
+    }
+
+    // Responsividade
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+
+      .filters {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filters mat-form-field,
+      .filters button {
+        width: 100%;
+        max-width: none;
+      }
+
+      .table-container {
+        font-size: 14px;
+      }
+
+      th, td {
+        padding: 8px 4px;
+      }
+    }
+
+    // Estados de loading
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+    }
+
+    // Animações suaves
+    .mat-mdc-row:hover {
+      background-color: #f5f5f5;
+      transition: background-color 0.2s ease;
+    }
+
+    // Success snackbar
+    ::ng-deep .success-snackbar {
+      background-color: #4caf50 !important;
+      color: white !important;
     }
   `]
 })
-export class ContasPagarComponent implements OnInit {
+export class ContasPagarComponent implements OnInit, AfterViewInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
   displayedColumns: string[] = ['descricao', 'fornecedor', 'valor', 'vencimento', 'status', 'acoes'];
   dataSource = new MatTableDataSource<ContaPagar>([]);
+  contaForm: FormGroup;
+  
+  statusOptions = [
+    { value: 'pendente', label: 'Pendente' },
+    { value: 'pago', label: 'Pago' },
+    { value: 'cancelado', label: 'Cancelado' },
+    { value: 'vencido', label: 'Vencido' }
+  ];
 
   constructor(
+    private fb: FormBuilder,
     private dialog: MatDialog,
     private snackBar: MatSnackBar
-  ) {}
+  ) {
+    this.contaForm = this.fb.group({
+      id: [null],
+      descricao: ['', [Validators.required, Validators.minLength(3)]],
+      fornecedor: ['', [Validators.required]],
+      valor: [null, [Validators.required, Validators.min(0.01)]],
+      data_vencimento: [null, [Validators.required]],
+      data_pagamento: [null],
+      status: ['pendente', [Validators.required]],
+      observacoes: ['']
+    });
+  }
 
   ngOnInit(): void {
     this.loadContas();
   }
 
-  ngAfterViewInit() {
+  ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
   }
 
   loadContas(): void {
-    // TODO: Implementar carregamento via API
-    // Dados de exemplo
-    this.dataSource.data = [
+    // Dados de exemplo - substituir pela chamada ao serviço
+    const contasExemplo: ContaPagar[] = [
       {
         id: 1,
-        descricao: 'Aluguel',
-        fornecedor: 'ImobiliÃ¡ria XYZ',
-        valor: 2500,
-        data_vencimento: new Date('2025-06-10'),
+        descricao: 'Pagamento de energia elétrica',
+        fornecedor: 'Companhia Elétrica',
+        valor: 350.50,
+        data_vencimento: new Date('2025-06-15'),
         status: 'pendente'
+      },
+      {
+        id: 2,
+        descricao: 'Aluguel do escritório',
+        fornecedor: 'Imobiliária XYZ',
+        valor: 2500.00,
+        data_vencimento: new Date('2025-06-10'),
+        status: 'pago',
+        data_pagamento: new Date('2025-06-08')
+      },
+      {
+        id: 3,
+        descricao: 'Fornecimento de material de escritório',
+        fornecedor: 'Papelaria ABC',
+        valor: 150.75,
+        data_vencimento: new Date('2025-05-25'),
+        status: 'vencido'
       }
     ];
+    
+    this.dataSource.data = contasExemplo;
   }
 
   applyFilter(event: Event): void {
     const filterValue = (event.target as HTMLInputElement).value;
     this.dataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
+    }
   }
 
   filterByStatus(status: string): void {
@@ -259,6 +399,7 @@ export class ContasPagarComponent implements OnInit {
       this.dataSource.filterPredicate = (data: ContaPagar) => data.status === status;
       this.dataSource.filter = 'trigger';
     } else {
+      this.dataSource.filterPredicate = () => true;
       this.dataSource.filter = '';
     }
   }
@@ -274,7 +415,13 @@ export class ContasPagarComponent implements OnInit {
   }
 
   openDialog(conta?: ContaPagar): void {
-    // TODO: Implementar dialog de criaÃ§Ã£o/ediÃ§Ã£o
+    // TODO: Implementar dialog de criação/edição
+    if (conta) {
+      this.contaForm.patchValue(conta);
+    } else {
+      this.resetForm();
+    }
+    
     this.snackBar.open('Funcionalidade em desenvolvimento', 'OK', {
       duration: 3000
     });
@@ -286,8 +433,14 @@ export class ContasPagarComponent implements OnInit {
 
   marcarComoPago(conta: ContaPagar): void {
     // TODO: Implementar via API
-    conta.status = 'pago';
-    conta.data_pagamento = new Date();
+    const index = this.dataSource.data.findIndex(c => c.id === conta.id);
+    if (index !== -1) {
+      this.dataSource.data[index].status = 'pago';
+      this.dataSource.data[index].data_pagamento = new Date();
+      // Força a atualização da tabela
+      this.dataSource.data = [...this.dataSource.data];
+    }
+    
     this.snackBar.open('Conta marcada como paga', 'OK', {
       duration: 3000,
       panelClass: ['success-snackbar']
@@ -295,9 +448,49 @@ export class ContasPagarComponent implements OnInit {
   }
 
   excluirConta(conta: ContaPagar): void {
-    // TODO: Implementar confirmaÃ§Ã£o e exclusÃ£o via API
-    this.snackBar.open('Conta excluÃ­da', 'OK', {
+    // TODO: Implementar confirmação e exclusão via API
+    const index = this.dataSource.data.findIndex(c => c.id === conta.id);
+    if (index !== -1) {
+      this.dataSource.data.splice(index, 1);
+      // Força a atualização da tabela
+      this.dataSource.data = [...this.dataSource.data];
+    }
+    
+    this.snackBar.open('Conta excluída com sucesso', 'OK', {
       duration: 3000
     });
+  }
+
+  onSubmit(): void {
+    if (this.contaForm.valid) {
+      const formData = this.contaForm.value;
+      console.log('Dados do formulário:', formData);
+      
+      // Aqui você adicionaria a lógica para salvar no backend
+      // this.contasService.create(formData).subscribe(...)
+      
+      this.resetForm();
+    } else {
+      console.log('Formulário inválido');
+      this.markFormGroupTouched();
+    }
+  }
+
+  resetForm(): void {
+    this.contaForm.reset();
+    this.contaForm.patchValue({ status: 'pendente' });
+  }
+
+  private markFormGroupTouched(): void {
+    Object.keys(this.contaForm.controls).forEach(key => {
+      this.contaForm.get(key)?.markAsTouched();
+    });
+  }
+
+  formatCurrency(value: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
   }
 }

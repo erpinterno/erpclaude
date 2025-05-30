@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
-  selector: 'app-contas-receber',
+  selector: 'app-sistema',
   standalone: true,
   imports: [
     CommonModule,
@@ -18,16 +18,16 @@ import { MatIconModule } from '@angular/material/icon';
       <mat-card>
         <mat-card-header>
           <mat-card-title>
-            <mat-icon>account_balance_wallet</mat-icon>
-            Contas a Receber
+            <mat-icon>settings_applications</mat-icon>
+            Configurações do Sistema
           </mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <div class="development-notice">
             <mat-icon>construction</mat-icon>
             <h3>Módulo em Desenvolvimento</h3>
-            <p>Funcionalidade de Contas a Receber será implementada em breve.</p>
-            <p>Aqui você poderá gerenciar recebimentos, clientes e cobrança.</p>
+            <p>Esta funcionalidade será implementada em breve.</p>
+            <p>Aqui você poderá gerenciar configurações gerais do sistema.</p>
           </div>
         </mat-card-content>
       </mat-card>
@@ -62,4 +62,4 @@ import { MatIconModule } from '@angular/material/icon';
     }
   `]
 })
-export class ContasReceberComponent {}
+export class SistemaComponent {}

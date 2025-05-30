@@ -15,15 +15,25 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-# Set all CORS enabled origins
+# CORS ATUALIZADO - Adiciona origens do frontend Angular
+frontend_origins = [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200", 
+    "http://0.0.0.0:4200",
+]
+
+# Combina origens do settings com as do frontend
+cors_origins = frontend_origins
 if settings.BACKEND_CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    cors_origins.extend([str(origin) for origin in settings.BACKEND_CORS_ORIGINS])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 

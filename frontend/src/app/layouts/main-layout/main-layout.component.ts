@@ -1,19 +1,23 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { MatToolbarModule } from '@angular/material/toolbar';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatListModule } from '@angular/material/list';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatMenuModule } from '@angular/material/menu';
-import { AuthService } from '../../core/services/auth.service';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatBadgeModule } from '@angular/material/badge';
+import { AuthService, User } from '../../services/auth.service';
 
 interface MenuItem {
   title: string;
   icon: string;
   route?: string;
   children?: MenuItem[];
+  badge?: string;
 }
 
 @Component({
@@ -24,82 +28,154 @@ interface MenuItem {
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    MatToolbarModule,
     MatSidenavModule,
-    MatListModule,
-    MatIconModule,
+    MatToolbarModule,
     MatButtonModule,
-    MatMenuModule
+    MatIconModule,
+    MatListModule,
+    MatExpansionModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MatBadgeModule
   ],
   template: `
     <mat-sidenav-container class="sidenav-container">
+      <!-- Menu Lateral -->
       <mat-sidenav #drawer class="sidenav" fixedInViewport
-          [attr.role]="'navigation'"
-          [mode]="'side'"
-          [opened]="true">
-        <mat-toolbar>Menu</mat-toolbar>
-        <mat-nav-list>
-          <ng-container *ngFor="let item of menuItems">
-            <ng-container *ngIf="!item.children">
-              <a mat-list-item [routerLink]="item.route" routerLinkActive="active">
-                <mat-icon matListItemIcon>{{item.icon}}</mat-icon>
-                <span matListItemTitle>{{item.title}}</span>
+                   [attr.role]="isHandset ? 'dialog' : 'navigation'"
+                   [mode]="isHandset ? 'over' : 'side'"
+                   [opened]="!isHandset">
+        
+        <!-- Header do Menu -->
+        <div class="sidenav-header">
+          <div class="logo">
+            <mat-icon class="logo-icon">business</mat-icon>
+            <span class="logo-text">ERP Claude</span>
+          </div>
+          <div class="user-info" *ngIf="currentUser">
+            <mat-icon>account_circle</mat-icon>
+            <div class="user-details">
+              <span class="user-name">{{ currentUser.full_name || currentUser.email }}</span>
+              <span class="user-email">{{ currentUser.email }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navegação -->
+        <mat-nav-list class="nav-list">
+          <!-- Dashboard -->
+          <a mat-list-item routerLink="/dashboard" routerLinkActive="active">
+            <mat-icon matListItemIcon>dashboard</mat-icon>
+            <span matListItemTitle>Dashboard</span>
+          </a>
+
+          <!-- Módulo Financeiro -->
+          <mat-expansion-panel class="nav-expansion-panel">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                <mat-icon class="panel-icon">attach_money</mat-icon>
+                <span>Financeiro</span>
+                <mat-icon class="expand-icon">expand_more</mat-icon>
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+            
+            <div class="sub-menu">
+              <a mat-list-item routerLink="/financeiro/contas-pagar" routerLinkActive="active">
+                <mat-icon matListItemIcon>payment</mat-icon>
+                <span matListItemTitle>Contas a Pagar</span>
               </a>
-            </ng-container>
+              <a mat-list-item routerLink="/financeiro/contas-receber" routerLinkActive="active">
+                <mat-icon matListItemIcon>account_balance_wallet</mat-icon>
+                <span matListItemTitle>Contas a Receber</span>
+              </a>
+              <a mat-list-item routerLink="/financeiro/conta-corrente" routerLinkActive="active">
+                <mat-icon matListItemIcon>account_balance</mat-icon>
+                <span matListItemTitle>Conta Corrente</span>
+              </a>
+              <a mat-list-item routerLink="/financeiro/import-export" routerLinkActive="active">
+                <mat-icon matListItemIcon>import_export</mat-icon>
+                <span matListItemTitle>Importação</span>
+              </a>
+            </div>
+          </mat-expansion-panel>
 
-            <ng-container *ngIf="item.children">
-              <mat-list-item (click)="toggleSubmenu(item.title)">
-                <mat-icon matListItemIcon>{{item.icon}}</mat-icon>
-                <span matListItemTitle>{{item.title}}</span>
-                <mat-icon class="submenu-icon">
-                  {{isSubmenuOpen(item.title) ? 'expand_less' : 'expand_more'}}
-                </mat-icon>
-              </mat-list-item>
-
-              <div class="submenu" *ngIf="isSubmenuOpen(item.title)">
-                <a mat-list-item *ngFor="let child of item.children" 
-                   [routerLink]="child.route" 
-                   routerLinkActive="active"
-                   class="submenu-item">
-                  <mat-icon matListItemIcon>{{child.icon}}</mat-icon>
-                  <span matListItemTitle>{{child.title}}</span>
-                </a>
-              </div>
-            </ng-container>
-          </ng-container>
+          <!-- Módulo Configuração -->
+          <mat-expansion-panel class="nav-expansion-panel">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                <mat-icon class="panel-icon">settings</mat-icon>
+                <span>Configuração</span>
+                <mat-icon class="expand-icon">expand_more</mat-icon>
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+            
+            <div class="sub-menu">
+              <a mat-list-item routerLink="/configuracao/usuarios" routerLinkActive="active">
+                <mat-icon matListItemIcon>people</mat-icon>
+                <span matListItemTitle>Usuários</span>
+              </a>
+              <a mat-list-item routerLink="/configuracao/perfis" routerLinkActive="active">
+                <mat-icon matListItemIcon>security</mat-icon>
+                <span matListItemTitle>Perfis de Acesso</span>
+              </a>
+              <a mat-list-item routerLink="/configuracao/sistema" routerLinkActive="active">
+                <mat-icon matListItemIcon>settings_applications</mat-icon>
+                <span matListItemTitle>Sistema</span>
+              </a>
+            </div>
+          </mat-expansion-panel>
         </mat-nav-list>
+
+        <!-- Footer do Menu -->
+        <div class="sidenav-footer">
+          <button mat-stroked-button (click)="logout()" class="logout-button">
+            <mat-icon>logout</mat-icon>
+            <span>Sair</span>
+          </button>
+        </div>
       </mat-sidenav>
 
-      <mat-sidenav-content>
-        <mat-toolbar color="primary">
+      <!-- Conteúdo Principal -->
+      <mat-sidenav-content class="main-content">
+        <!-- Toolbar -->
+        <mat-toolbar class="toolbar" color="primary">
           <button
             type="button"
             aria-label="Toggle sidenav"
             mat-icon-button
-            (click)="drawer.toggle()">
+            (click)="drawer.toggle()"
+            *ngIf="isHandset">
             <mat-icon>menu</mat-icon>
           </button>
-          <span>ERP Claude</span>
-          <span class="spacer"></span>
-
-          <button mat-icon-button [matMenuTriggerFor]="userMenu">
+          
+          <span class="toolbar-title">{{ getPageTitle() }}</span>
+          
+          <span class="toolbar-spacer"></span>
+          
+          <!-- Ações do usuário -->
+          <button mat-icon-button [matMenuTriggerFor]="userMenu" matTooltip="Menu do usuário">
             <mat-icon>account_circle</mat-icon>
           </button>
-
+          
           <mat-menu #userMenu="matMenu">
-            <div mat-menu-item disabled class="user-info">
+            <button mat-menu-item routerLink="/perfil">
               <mat-icon>person</mat-icon>
-              <span>{{(authService.currentUser$ | async)?.email}}</span>
-            </div>
+              <span>Meu Perfil</span>
+            </button>
+            <button mat-menu-item routerLink="/configuracao">
+              <mat-icon>settings</mat-icon>
+              <span>Configurações</span>
+            </button>
             <mat-divider></mat-divider>
             <button mat-menu-item (click)="logout()">
-              <mat-icon>exit_to_app</mat-icon>
+              <mat-icon>logout</mat-icon>
               <span>Sair</span>
             </button>
           </mat-menu>
         </mat-toolbar>
 
-        <div class="content-container">
+        <!-- Área de Conteúdo -->
+        <div class="content-area">
           <router-outlet></router-outlet>
         </div>
       </mat-sidenav-content>
@@ -107,108 +183,218 @@ interface MenuItem {
   `,
   styles: [`
     .sidenav-container {
-      height: 100%;
+      height: 100vh;
     }
 
     .sidenav {
-      width: 260px;
+      width: 280px;
+      background-color: #fafafa;
+      border-right: 1px solid #e0e0e0;
     }
 
-    .sidenav .mat-toolbar {
-      background: inherit;
+    .sidenav-header {
+      padding: 20px 16px;
+      border-bottom: 1px solid #e0e0e0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
     }
 
-    .mat-toolbar.mat-primary {
-      position: sticky;
-      top: 0;
-      z-index: 1;
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
     }
 
-    .spacer {
-      flex: 1 1 auto;
+    .logo-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
     }
 
-    .submenu {
-      overflow: hidden;
-    }
-
-    .submenu-item {
-      padding-left: 60px !important;
-    }
-
-    .submenu-icon {
-      margin-left: auto;
-    }
-
-    .active {
-      background-color: rgba(63, 81, 181, 0.1);
+    .logo-text {
+      font-size: 20px;
+      font-weight: 600;
     }
 
     .user-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+
+    .user-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-name {
+      font-weight: 500;
+    }
+
+    .user-email {
+      font-size: 12px;
       opacity: 0.8;
     }
 
-    .content-container {
-      padding: 20px;
-      min-height: calc(100vh - 64px);
+    .nav-list {
+      padding-top: 8px;
     }
 
+    .nav-expansion-panel {
+      box-shadow: none !important;
+      background: transparent !important;
+    }
+
+    .nav-expansion-panel ::ng-deep .mat-expansion-panel-header {
+      padding: 0 16px;
+      height: 48px;
+    }
+
+    .nav-expansion-panel ::ng-deep .mat-expansion-panel-content {
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .panel-icon {
+      margin-right: 12px;
+      color: #666;
+    }
+
+    .expand-icon {
+      margin-left: auto;
+      color: #666;
+    }
+
+    .sub-menu {
+      background-color: #f5f5f5;
+    }
+
+    .sub-menu a {
+      padding-left: 32px !important;
+      border-left: 3px solid transparent;
+    }
+
+    .sub-menu a.active {
+      border-left-color: #667eea;
+      background-color: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .sidenav-footer {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+    }
+
+    .logout-button {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 8px;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .toolbar-title {
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .toolbar-spacer {
+      flex: 1 1 auto;
+    }
+
+    .main-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 0;
+      overflow-y: auto;
+      background-color: #fafafa;
+    }
+
+    // Estados ativos
+    .mat-mdc-list-item.active {
+      background-color: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .mat-mdc-list-item.active .mat-icon {
+      color: #1976d2;
+    }
+
+    // Responsividade
     @media (max-width: 768px) {
       .sidenav {
-        width: 200px;
+        width: 100%;
       }
+      
+      .user-info {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    // Customização dos expansion panels
+    ::ng-deep .mat-expansion-panel-header-title {
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    ::ng-deep .mat-expansion-panel-body {
+      padding: 0;
     }
   `]
 })
-export class MainLayoutComponent {
-  menuItems: MenuItem[] = [
-    {
-      title: 'Dashboard',
-      icon: 'dashboard',
-      route: '/dashboard'
-    },
-    {
-      title: 'Financeiro',
-      icon: 'attach_money',
-      children: [
-        {
-          title: 'Contas a Pagar',
-          icon: 'money_off',
-          route: '/financeiro/contas-pagar'
-        },
-        {
-          title: 'Contas a Receber',
-          icon: 'payments',
-          route: '/financeiro/contas-receber'
-        },
-        {
-          title: 'Conta Corrente',
-          icon: 'account_balance',
-          route: '/financeiro/conta-corrente'
-        },
-        {
-          title: 'Importar/Exportar',
-          icon: 'import_export',
-          route: '/financeiro/import-export'
-        }
-      ]
-    }
-  ];
+export class MainLayoutComponent implements OnInit {
+  isHandset = false;
+  currentUser: User | null = null;
 
-  openSubmenus = new Set<string>();
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
-  constructor(public authService: AuthService) {}
+  ngOnInit(): void {
+    // Detecta se é mobile
+    this.isHandset = window.innerWidth <= 768;
+    
+    // Escuta mudanças de tamanho da tela
+    window.addEventListener('resize', () => {
+      this.isHandset = window.innerWidth <= 768;
+    });
 
-  toggleSubmenu(title: string): void {
-    if (this.openSubmenus.has(title)) {
-      this.openSubmenus.delete(title);
-    } else {
-      this.openSubmenus.add(title);
-    }
+    // Observa o usuário atual
+    this.authService.currentUser$.subscribe(user => {
+      this.currentUser = user;
+    });
   }
 
-  isSubmenuOpen(title: string): boolean {
-    return this.openSubmenus.has(title);
+  getPageTitle(): string {
+    const url = this.router.url;
+    
+    if (url.includes('/dashboard')) return 'Dashboard';
+    if (url.includes('/financeiro/contas-pagar')) return 'Contas a Pagar';
+    if (url.includes('/financeiro/contas-receber')) return 'Contas a Receber';
+    if (url.includes('/financeiro/conta-corrente')) return 'Conta Corrente';
+    if (url.includes('/financeiro/import-export')) return 'Importação';
+    if (url.includes('/configuracao/usuarios')) return 'Gerenciamento de Usuários';
+    if (url.includes('/configuracao/perfis')) return 'Perfis de Acesso';
+    if (url.includes('/configuracao/sistema')) return 'Configurações do Sistema';
+    if (url.includes('/configuracao')) return 'Configurações';
+    if (url.includes('/financeiro')) return 'Financeiro';
+    
+    return 'ERP Claude';
   }
 
   logout(): void {
