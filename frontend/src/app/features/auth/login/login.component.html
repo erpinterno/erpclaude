@@ -1,0 +1,90 @@
+<div class="login-container">
+  <mat-card class="login-card">
+    <mat-card-header>
+      <mat-card-title>
+        <h1>ERP Claude</h1>
+      </mat-card-title>
+      <mat-card-subtitle>
+        Sistema de Gestão Empresarial
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <!-- Campo Email -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input 
+            matInput 
+            type="email" 
+            formControlName="email" 
+            placeholder="seu@email.com"
+            autocomplete="username">
+          <mat-icon matPrefix>email</mat-icon>
+          <mat-error *ngIf="email?.invalid && email?.touched">
+            <span *ngIf="email?.errors?.['required']">Email é obrigatório</span>
+            <span *ngIf="email?.errors?.['email']">Email inválido</span>
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Campo Senha -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Senha</mat-label>
+          <input 
+            matInput 
+            [type]="hidePassword ? 'password' : 'text'" 
+            formControlName="password"
+            autocomplete="current-password">
+          <mat-icon matPrefix>lock</mat-icon>
+          <button 
+            mat-icon-button 
+            matSuffix 
+            type="button"
+            (click)="hidePassword = !hidePassword">
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="password?.invalid && password?.touched">
+            <span *ngIf="password?.errors?.['required']">Senha é obrigatória</span>
+            <span *ngIf="password?.errors?.['minlength']">Senha deve ter no mínimo 6 caracteres</span>
+          </mat-error>
+        </mat-form-field>
+
+        <!-- Mensagem de erro -->
+        <div *ngIf="errorMessage" class="error-message">
+          <mat-icon>error</mat-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <!-- Botões -->
+        <div class="button-container">
+          <button 
+            mat-raised-button 
+            color="primary" 
+            type="submit" 
+            [disabled]="loading || loginForm.invalid"
+            class="full-width">
+            <mat-spinner *ngIf="loading" diameter="20"></mat-spinner>
+            <span *ngIf="!loading">Entrar</span>
+          </button>
+        </div>
+
+        <!-- Link para credenciais de teste -->
+        <div class="helper-links">
+          <button 
+            mat-button 
+            type="button" 
+            color="accent"
+            (click)="fillTestCredentials()">
+            Usar credenciais de teste
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+
+    <mat-card-footer>
+      <div class="footer-info">
+        <small>© 2025 ERP Claude - Todos os direitos reservados</small>
+      </div>
+    </mat-card-footer>
+  </mat-card>
+</div>

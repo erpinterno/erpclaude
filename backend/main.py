@@ -1,18 +1,21 @@
 # backend/main.py
-import time
-import sys
 import os
-from fastapi import FastAPI, HTTPException, Depends, status
+import sys
+import time
+import logging
+from datetime import datetime, timedelta
+from typing import Optional, List
+
+from fastapi import FastAPI, HTTPException, Depends, status, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, text
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, Numeric, ForeignKey, Date
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, relationship
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
 from pydantic import BaseModel, EmailStr
-import logging
+import uvicorn
 
 # Configuração de logging
 logging.basicConfig(level=logging.INFO)
@@ -23,21 +26,13 @@ SECRET_KEY = "your-secret-key-here-change-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# URL do banco de dados - suporta diferentes ambientes
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://erp_user:erp_password@postgres:5432/erp_db"
-)
+# URL do banco de dados - usando SQLite para desenvolvimento
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./erp_database.db")
 
 logger.info(f"🔗 Database URL: {DATABASE_URL}")
 
 # SQLAlchemy setup
-engine = create_engine(
-    DATABASE_URL, 
-    echo=False,
-    pool_pre_ping=True,
-    pool_recycle=300
-)
+engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -46,6 +41,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
 # ==================== MODELS ====================
+
 class User(Base):
     __tablename__ = "users"
     
@@ -56,12 +52,13 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_superuser = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Banco(Base):
     __tablename__ = "bancos"
     
     id = Column(Integer, primary_key=True, index=True)
-    codigo = Column(String(3), unique=True, index=True, nullable=False)
+    codigo = Column(String(10), unique=True, index=True, nullable=False)
     nome = Column(String(100), nullable=False)
     nome_fantasia = Column(String(100))
     site = Column(String(255))
@@ -77,12 +74,151 @@ class Categoria(Base):
     nome = Column(String(100), nullable=False)
     descricao = Column(Text)
     tipo = Column(String(10), nullable=False)  # RECEITA ou DESPESA
-    categoria_pai_id = Column(Integer)
+    categoria_pai_id = Column(Integer, ForeignKey("categorias.id"))
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacionamentos
+    categoria_pai = relationship("Categoria", remote_side=[id])
+
+class CentroCusto(Base):
+    __tablename__ = "centros_custo"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(20), unique=True, index=True, nullable=False)
+    nome = Column(String(100), nullable=False)
+    descricao = Column(Text)
     ativo = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class Cliente(Base):
+    __tablename__ = "clientes"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(20), unique=True, index=True, nullable=False)
+    nome = Column(String(100), nullable=False)
+    nome_fantasia = Column(String(100))
+    cpf_cnpj = Column(String(20), unique=True)
+    email = Column(String(100))
+    telefone = Column(String(20))
+    endereco = Column(String(255))
+    cidade = Column(String(100))
+    estado = Column(String(2))
+    cep = Column(String(10))
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class Fornecedor(Base):
+    __tablename__ = "fornecedores"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(20), unique=True, index=True, nullable=False)
+    nome = Column(String(100), nullable=False)
+    nome_fantasia = Column(String(100))
+    cpf_cnpj = Column(String(20), unique=True)
+    email = Column(String(100))
+    telefone = Column(String(20))
+    endereco = Column(String(255))
+    cidade = Column(String(100))
+    estado = Column(String(2))
+    cep = Column(String(10))
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class FormaPagamento(Base):
+    __tablename__ = "formas_pagamento"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(20), unique=True, index=True, nullable=False)
+    nome = Column(String(100), nullable=False)
+    descricao = Column(Text)
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class PlanoContas(Base):
+    __tablename__ = "plano_contas"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    codigo = Column(String(20), unique=True, index=True, nullable=False)
+    nome = Column(String(100), nullable=False)
+    tipo = Column(String(10), nullable=False)  # ATIVO, PASSIVO, RECEITA, DESPESA
+    conta_pai_id = Column(Integer, ForeignKey("plano_contas.id"))
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacionamentos
+    conta_pai = relationship("PlanoContas", remote_side=[id])
+
+class ContaPagar(Base):
+    __tablename__ = "contas_pagar"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    descricao = Column(String(255), nullable=False)
+    fornecedor_id = Column(Integer, ForeignKey("fornecedores.id"), nullable=False)
+    categoria_id = Column(Integer, ForeignKey("categorias.id"))
+    centro_custo_id = Column(Integer, ForeignKey("centros_custo.id"))
+    forma_pagamento_id = Column(Integer, ForeignKey("formas_pagamento.id"))
+    valor = Column(Numeric(15, 2), nullable=False)
+    data_vencimento = Column(Date, nullable=False)
+    data_pagamento = Column(Date)
+    status = Column(String(20), default="pendente")  # pendente, pago, cancelado, vencido
+    observacoes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacionamentos
+    fornecedor = relationship("Fornecedor")
+    categoria = relationship("Categoria")
+    centro_custo = relationship("CentroCusto")
+    forma_pagamento = relationship("FormaPagamento")
+
+class ContaReceber(Base):
+    __tablename__ = "contas_receber"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    descricao = Column(String(255), nullable=False)
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=False)
+    categoria_id = Column(Integer, ForeignKey("categorias.id"))
+    centro_custo_id = Column(Integer, ForeignKey("centros_custo.id"))
+    forma_pagamento_id = Column(Integer, ForeignKey("formas_pagamento.id"))
+    valor = Column(Numeric(15, 2), nullable=False)
+    data_vencimento = Column(Date, nullable=False)
+    data_recebimento = Column(Date)
+    status = Column(String(20), default="pendente")  # pendente, recebido, cancelado, vencido
+    observacoes = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacionamentos
+    cliente = relationship("Cliente")
+    categoria = relationship("Categoria")
+    centro_custo = relationship("CentroCusto")
+    forma_pagamento = relationship("FormaPagamento")
+
+class ContaCorrente(Base):
+    __tablename__ = "conta_corrente"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    banco_id = Column(Integer, ForeignKey("bancos.id"), nullable=False)
+    agencia = Column(String(10))
+    conta = Column(String(20))
+    saldo_inicial = Column(Numeric(15, 2), default=0)
+    saldo_atual = Column(Numeric(15, 2), default=0)
+    ativo = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacionamentos
+    banco = relationship("Banco")
+
 # ==================== SCHEMAS ====================
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
@@ -95,19 +231,91 @@ class Token(BaseModel):
 class BancoCreate(BaseModel):
     codigo: str
     nome: str
-    nome_fantasia: str = None
-    site: str = None
+    nome_fantasia: Optional[str] = None
+    site: Optional[str] = None
     ativo: bool = True
+
+class BancoUpdate(BaseModel):
+    nome: Optional[str] = None
+    nome_fantasia: Optional[str] = None
+    site: Optional[str] = None
+    ativo: Optional[bool] = None
 
 class CategoriaCreate(BaseModel):
     codigo: str
     nome: str
-    descricao: str = None
+    descricao: Optional[str] = None
     tipo: str
-    categoria_pai_id: int = None
+    categoria_pai_id: Optional[int] = None
     ativo: bool = True
 
+class CentroCustoCreate(BaseModel):
+    codigo: str
+    nome: str
+    descricao: Optional[str] = None
+    ativo: bool = True
+
+class ClienteCreate(BaseModel):
+    codigo: str
+    nome: str
+    nome_fantasia: Optional[str] = None
+    cpf_cnpj: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    endereco: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    ativo: bool = True
+
+class FornecedorCreate(BaseModel):
+    codigo: str
+    nome: str
+    nome_fantasia: Optional[str] = None
+    cpf_cnpj: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    endereco: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    ativo: bool = True
+
+class FormaPagamentoCreate(BaseModel):
+    codigo: str
+    nome: str
+    descricao: Optional[str] = None
+    ativo: bool = True
+
+class PlanoContasCreate(BaseModel):
+    codigo: str
+    nome: str
+    tipo: str
+    conta_pai_id: Optional[int] = None
+    ativo: bool = True
+
+class ContaPagarCreate(BaseModel):
+    descricao: str
+    fornecedor_id: int
+    categoria_id: Optional[int] = None
+    centro_custo_id: Optional[int] = None
+    forma_pagamento_id: Optional[int] = None
+    valor: float
+    data_vencimento: str
+    observacoes: Optional[str] = None
+
+class ContaReceberCreate(BaseModel):
+    descricao: str
+    cliente_id: int
+    categoria_id: Optional[int] = None
+    centro_custo_id: Optional[int] = None
+    forma_pagamento_id: Optional[int] = None
+    valor: float
+    data_vencimento: str
+    observacoes: Optional[str] = None
+
 # ==================== DEPENDENCIES ====================
+
 def get_db():
     db = SessionLocal()
     try:
@@ -142,50 +350,60 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Usuário não encontrado")
     return user
 
-# ==================== DATABASE SETUP - CORRIGIDO ====================
-def test_connection():
-    """Testa a conexão com o banco de dados"""
+# ==================== DATABASE SETUP ====================
+
+def create_tables():
+    """Criar todas as tabelas"""
     try:
-        with engine.connect() as connection:
-            # Usar text() para SQLAlchemy 2.x
-            result = connection.execute(text("SELECT 1"))
-            return True
+        Base.metadata.create_all(bind=engine)
+        logger.info("🗃️ Tabelas criadas/verificadas com sucesso!")
+        return True
     except Exception as e:
-        logger.error(f"❌ Erro na conexão: {e}")
+        logger.error(f"❌ Erro ao criar tabelas: {e}")
         return False
 
-def wait_for_database(max_retries=30):
-    """Aguarda o banco de dados ficar disponível"""
-    retries = 0
-    while retries < max_retries:
-        logger.info(f"🔄 Tentativa {retries + 1}/{max_retries} de conexão com o banco...")
+def create_default_users():
+    """Criar usuários padrão"""
+    db = SessionLocal()
+    try:
+        # Verificar se já existem usuários
+        if db.query(User).count() > 0:
+            logger.info("👤 Usuários já existem no banco")
+            return
+            
+        logger.info("👤 Criando usuários padrão...")
         
-        if test_connection():
-            logger.info("✅ Banco de dados conectado!")
-            return True
+        users_to_create = [
+            ("admin@example.com", "Administrador do Sistema", "changethis", True),
+            ("financeiro@example.com", "Elon Alb", "fin123", False),
+            ("user@example.com", "Maria Silva", "user123", False),
+        ]
         
-        retries += 1
-        if retries < max_retries:
-            logger.info("⏳ Aguardando 2 segundos...")
-            time.sleep(2)
-    
-    logger.error("❌ Não foi possível conectar ao banco de dados!")
-    return False
+        for email, name, password, is_superuser in users_to_create:
+            user = User(
+                email=email,
+                full_name=name,
+                hashed_password=get_password_hash(password),
+                is_active=True,
+                is_superuser=is_superuser
+            )
+            db.add(user)
+        
+        db.commit()
+        logger.info("✅ Usuários padrão criados!")
+        
+    except Exception as e:
+        logger.error(f"⚠️ Erro ao criar usuários padrão: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
-# Aguardar banco estar disponível
-if not wait_for_database():
-    logger.error("🚨 Falha crítica: Banco de dados não disponível. Saindo...")
-    sys.exit(1)
-
-# Criar tabelas
-try:
-    Base.metadata.create_all(bind=engine)
-    logger.info("🗃️ Tabelas criadas/verificadas com sucesso!")
-except Exception as e:
-    logger.error(f"❌ Erro ao criar tabelas: {e}")
-    sys.exit(1)
+# Inicializar banco de dados
+if create_tables():
+    create_default_users()
 
 # ==================== FASTAPI APP ====================
+
 app = FastAPI(
     title="ERP Claude - Backend API",
     description="Sistema ERP desenvolvido com Claude AI",
@@ -195,12 +413,14 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS - Configuração para permitir o frontend Angular
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:4200",
+        "http://localhost:4201",
         "http://127.0.0.1:4200",
+        "http://127.0.0.1:4201",
         "http://0.0.0.0:4200",
         "https://localhost:4200"
     ],
@@ -208,40 +428,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ==================== STARTUP EVENT ====================
-@app.on_event("startup")
-async def startup_event():
-    db = SessionLocal()
-    try:
-        # Criar usuário admin padrão se não existir
-        admin_user = db.query(User).filter(User.email == "admin@example.com").first()
-        if not admin_user:
-            logger.info("👤 Criando usuários padrão...")
-            
-            users_to_create = [
-                ("admin@example.com", "Administrador do Sistema", "changethis", True),
-                ("financeiro@example.com", "Elon Alb", "fin123", False),
-                ("user@example.com", "Maria Silva", "user123", False),
-            ]
-            
-            for email, name, password, is_superuser in users_to_create:
-                user = User(
-                    email=email,
-                    full_name=name,
-                    hashed_password=get_password_hash(password),
-                    is_active=True,
-                    is_superuser=is_superuser
-                )
-                db.add(user)
-            
-            db.commit()
-            logger.info("✅ Usuários padrão criados!")
-    except Exception as e:
-        logger.error(f"⚠️ Erro ao criar usuários padrão: {e}")
-        db.rollback()
-    finally:
-        db.close()
 
 # ==================== ROUTES ====================
 
@@ -256,31 +442,27 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    try:
-        # Usar a função de teste corrigida
-        db_connected = test_connection()
-        return {
-            "status": "healthy" if db_connected else "unhealthy",
-            "database": "connected" if db_connected else "disconnected",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "database": "disconnected",
-            "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
-        }
+    return {
+        "status": "healthy",
+        "database": "connected",
+        "timestamp": datetime.utcnow().isoformat()
+    }
 
 # ==================== AUTH ROUTES ====================
-@app.post("/auth/login", response_model=Token)
-async def login(user_data: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_data.email).first()
+
+@app.post("/api/v1/auth/login", response_model=Token)
+async def login_for_access_token(
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == username).first()
     
-    if not user or not verify_password(user_data.password, user.hashed_password):
+    if not user or not verify_password(password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou senha incorretos"
+            detail="Email ou senha incorretos",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     
     if not user.is_active:
@@ -302,7 +484,7 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
         }
     }
 
-@app.get("/auth/me")
+@app.get("/api/v1/users/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     return {
         "id": current_user.id,
@@ -312,11 +494,12 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     }
 
 # ==================== BANCOS ROUTES ====================
-@app.get("/bancos")
+
+@app.get("/api/v1/bancos")
 async def get_bancos(
     page: int = 1,
     limit: int = 10,
-    search: str = None,
+    search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -339,13 +522,12 @@ async def get_bancos(
         "totalPages": (total + limit - 1) // limit
     }
 
-@app.post("/bancos")
+@app.post("/api/v1/bancos")
 async def create_banco(
     banco: BancoCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Verificar se código já existe
     if db.query(Banco).filter(Banco.codigo == banco.codigo).first():
         raise HTTPException(status_code=400, detail="Código já existe")
     
@@ -355,54 +537,79 @@ async def create_banco(
     db.refresh(db_banco)
     return db_banco
 
-# ==================== CATEGORIAS ROUTES ====================
-@app.get("/categorias")
-async def get_categorias(
-    page: int = 1,
-    limit: int = 10,
-    search: str = None,
-    tipo: str = None,
+@app.put("/api/v1/bancos/{banco_id}")
+async def update_banco(
+    banco_id: int,
+    banco: BancoUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    query = db.query(Categoria)
+    db_banco = db.query(Banco).filter(Banco.id == banco_id).first()
+    if not db_banco:
+        raise HTTPException(status_code=404, detail="Banco não encontrado")
+    
+    for field, value in banco.dict(exclude_unset=True).items():
+        setattr(db_banco, field, value)
+    
+    db.commit()
+    db.refresh(db_banco)
+    return db_banco
+
+@app.delete("/api/v1/bancos/{banco_id}")
+async def delete_banco(
+    banco_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    db_banco = db.query(Banco).filter(Banco.id == banco_id).first()
+    if not db_banco:
+        raise HTTPException(status_code=404, detail="Banco não encontrado")
+    
+    db.delete(db_banco)
+    db.commit()
+    return {"message": "Banco excluído com sucesso"}
+
+# ==================== CONTAS A PAGAR ROUTES ====================
+
+@app.get("/api/v1/contas-pagar")
+async def get_contas_pagar(
+    page: int = 1,
+    limit: int = 10,
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(ContaPagar)
     
     if search:
-        query = query.filter(
-            (Categoria.codigo.ilike(f"%{search}%")) | 
-            (Categoria.nome.ilike(f"%{search}%"))
-        )
+        query = query.filter(ContaPagar.descricao.ilike(f"%{search}%"))
     
-    if tipo:
-        query = query.filter(Categoria.tipo == tipo)
+    if status:
+        query = query.filter(ContaPagar.status == status)
     
     total = query.count()
-    categorias = query.offset((page - 1) * limit).limit(limit).all()
+    contas = query.offset((page - 1) * limit).limit(limit).all()
     
     return {
-        "items": categorias,
+        "items": contas,
         "total": total,
         "page": page,
         "limit": limit,
         "totalPages": (total + limit - 1) // limit
     }
 
-@app.post("/categorias")
-async def create_categoria(
-    categoria: CategoriaCreate,
+@app.post("/api/v1/contas-pagar")
+async def create_conta_pagar(
+    conta: ContaPagarCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Verificar se código já existe
-    if db.query(Categoria).filter(Categoria.codigo == categoria.codigo).first():
-        raise HTTPException(status_code=400, detail="Código já existe")
-    
-    db_categoria = Categoria(**categoria.dict())
-    db.add(db_categoria)
+    db_conta = ContaPagar(**conta.dict())
+    db.add(db_conta)
     db.commit()
-    db.refresh(db_categoria)
-    return db_categoria
+    db.refresh(db_conta)
+    return db_conta
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

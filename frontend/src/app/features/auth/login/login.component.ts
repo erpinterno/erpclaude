@@ -1,10 +1,30 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../../services/auth.service';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../../../core/services/auth.service';
+
+// Angular Material
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-login',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule
+  ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
@@ -54,15 +74,19 @@ export class LoginComponent implements OnInit {
 
     const { email, password } = this.loginForm.value;
 
-    // Usar o método login com objeto credentials
-    this.authService.login({ username: email, password: password }).subscribe({
+    // Usar o método login com FormData
+    this.authService.login(email, password).subscribe({
       next: (response) => {
         console.log('Login successful', response);
         
+        // Salvar token e buscar dados do usuário
+        this.authService.saveAuthData(response);
+        
         // Buscar dados do usuário após login bem-sucedido
-        this.authService.getMe().subscribe({
+        this.authService.getCurrentUser().subscribe({
           next: (user) => {
             console.log('User data loaded', user);
+            this.authService.saveAuthData(response, user);
             this.router.navigate(['/dashboard']);
           },
           error: (error) => {

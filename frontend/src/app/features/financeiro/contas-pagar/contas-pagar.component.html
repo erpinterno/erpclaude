@@ -1,0 +1,246 @@
+<div class="contas-pagar-container">
+  <!-- Header da página -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="page-title">
+          <i class="fas fa-file-invoice-dollar"></i>
+          Contas a Pagar
+        </h1>
+        <p class="page-subtitle">Gerencie suas contas a pagar de forma eficiente</p>
+      </div>
+      <div class="header-actions">
+        <button mat-raised-button color="primary" (click)="openDialog()" class="btn-nova-conta">
+          <i class="fas fa-plus"></i>
+          Nova Conta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards de resumo -->
+  <div class="summary-cards">
+    <div class="summary-card pending">
+      <div class="card-icon">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="card-content">
+        <h3>{{ getTotalPendente() | currency:'BRL' }}</h3>
+        <p>Pendentes</p>
+      </div>
+    </div>
+    
+    <div class="summary-card overdue">
+      <div class="card-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="card-content">
+        <h3>{{ getTotalVencido() | currency:'BRL' }}</h3>
+        <p>Vencidas</p>
+      </div>
+    </div>
+    
+    <div class="summary-card paid">
+      <div class="card-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="card-content">
+        <h3>{{ getTotalPago() | currency:'BRL' }}</h3>
+        <p>Pagas</p>
+      </div>
+    </div>
+    
+    <div class="summary-card total">
+      <div class="card-icon">
+        <i class="fas fa-calculator"></i>
+      </div>
+      <div class="card-content">
+        <h3>{{ getTotalGeral() | currency:'BRL' }}</h3>
+        <p>Total</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros e busca -->
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filters-container">
+        <div class="filter-group">
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Buscar contas</mat-label>
+            <input matInput (keyup)="applyFilter($event)" placeholder="Digite para buscar...">
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="filter-group">
+          <mat-form-field appearance="outline">
+            <mat-label>Status</mat-label>
+            <mat-select (selectionChange)="filterByStatus($event.value)">
+              <mat-option value="">Todos</mat-option>
+              <mat-option value="pendente">Pendente</mat-option>
+              <mat-option value="pago">Pago</mat-option>
+              <mat-option value="vencido">Vencido</mat-option>
+              <mat-option value="cancelado">Cancelado</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="filter-group">
+          <mat-form-field appearance="outline">
+            <mat-label>Período</mat-label>
+            <mat-date-range-input [rangePicker]="picker">
+              <input matStartDate placeholder="Data inicial">
+              <input matEndDate placeholder="Data final">
+            </mat-date-range-input>
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-date-range-picker #picker></mat-date-range-picker>
+          </mat-form-field>
+        </div>
+
+        <div class="filter-actions">
+          <button mat-stroked-button (click)="clearFilters()">
+            <i class="fas fa-times"></i>
+            Limpar
+          </button>
+          <button mat-raised-button color="accent" (click)="exportData()">
+            <i class="fas fa-download"></i>
+            Exportar
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Tabela de contas -->
+  <mat-card class="table-card">
+    <mat-card-content>
+      <div class="table-container">
+        <table mat-table [dataSource]="dataSource" matSort class="contas-table">
+
+          <!-- Coluna Descrição -->
+          <ng-container matColumnDef="descricao">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              <i class="fas fa-file-text"></i>
+              Descrição
+            </th>
+            <td mat-cell *matCellDef="let conta">
+              <div class="cell-content">
+                <strong>{{conta.descricao}}</strong>
+                <small *ngIf="conta.observacoes">{{conta.observacoes}}</small>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Coluna Fornecedor -->
+          <ng-container matColumnDef="fornecedor">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              <i class="fas fa-truck"></i>
+              Fornecedor
+            </th>
+            <td mat-cell *matCellDef="let conta">{{conta.fornecedor}}</td>
+          </ng-container>
+
+          <!-- Coluna Valor -->
+          <ng-container matColumnDef="valor">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              <i class="fas fa-dollar-sign"></i>
+              Valor
+            </th>
+            <td mat-cell *matCellDef="let conta">
+              <span class="valor-cell">{{conta.valor | currency:'BRL'}}</span>
+            </td>
+          </ng-container>
+
+          <!-- Coluna Vencimento -->
+          <ng-container matColumnDef="vencimento">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>
+              <i class="fas fa-calendar"></i>
+              Vencimento
+            </th>
+            <td mat-cell *matCellDef="let conta">
+              <div class="date-cell" [class.overdue]="isOverdue(conta.data_vencimento) && conta.status === 'pendente'">
+                {{conta.data_vencimento | date:'dd/MM/yyyy'}}
+                <i class="fas fa-exclamation-triangle" *ngIf="isOverdue(conta.data_vencimento) && conta.status === 'pendente'"></i>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Coluna Status -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>
+              <i class="fas fa-info-circle"></i>
+              Status
+            </th>
+            <td mat-cell *matCellDef="let conta">
+              <span class="status-badge" [ngClass]="'status-' + conta.status">
+                <i [class]="getStatusIcon(conta.status)"></i>
+                {{getStatusLabel(conta.status)}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Coluna Ações -->
+          <ng-container matColumnDef="acoes">
+            <th mat-header-cell *matHeaderCellDef>
+              <i class="fas fa-cogs"></i>
+              Ações
+            </th>
+            <td mat-cell *matCellDef="let conta">
+              <div class="action-buttons">
+                <button mat-icon-button 
+                        matTooltip="Editar" 
+                        (click)="editarConta(conta)"
+                        class="btn-edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+                
+                <button mat-icon-button 
+                        matTooltip="Marcar como Pago" 
+                        (click)="marcarComoPago(conta)"
+                        *ngIf="conta.status === 'pendente'"
+                        class="btn-pay">
+                  <i class="fas fa-check"></i>
+                </button>
+                
+                <button mat-icon-button 
+                        matTooltip="Excluir" 
+                        (click)="excluirConta(conta)"
+                        class="btn-delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+              [class.row-overdue]="isOverdue(row.data_vencimento) && row.status === 'pendente'"></tr>
+
+          <!-- Estado vazio -->
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell empty-state" colspan="6">
+              <div class="empty-content">
+                <i class="fas fa-inbox"></i>
+                <h3>Nenhuma conta encontrada</h3>
+                <p>Não há contas que correspondam aos filtros aplicados.</p>
+                <button mat-raised-button color="primary" (click)="openDialog()">
+                  <i class="fas fa-plus"></i>
+                  Adicionar primeira conta
+                </button>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Paginação -->
+      <mat-paginator 
+        [pageSizeOptions]="[10, 25, 50, 100]" 
+        [pageSize]="25"
+        showFirstLastButtons
+        class="custom-paginator">
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div>
