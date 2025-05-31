@@ -18,3 +18,4 @@ redis==5.0.1
 celery==5.3.6
 email-validator==2.1.0
 python-dateutil==2.8.2
+sqlalchemy>=2.0.0

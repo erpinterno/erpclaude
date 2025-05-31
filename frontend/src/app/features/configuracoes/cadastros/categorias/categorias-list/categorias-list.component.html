@@ -1,0 +1,246 @@
+<!-- src/app/features/configuracoes/cadastros/categorias/categorias-list/categorias-list.component.html -->
+<div class="page-container">
+  <!-- Header da página -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="page-title">
+          <i class="fas fa-tags"></i>
+          Cadastro de Categorias
+        </h1>
+        <p class="page-subtitle">Gerencie as categorias de receitas e despesas</p>
+      </div>
+      <div class="header-actions">
+        <button 
+          class="btn btn-primary"
+          (click)="newCategoria()">
+          <i class="fas fa-plus"></i>
+          Nova Categoria
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros e busca -->
+  <div class="filters-card">
+    <div class="filters-content">
+      <div class="search-group">
+        <div class="search-input-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input 
+            type="text"
+            class="form-control search-input"
+            placeholder="Buscar por código ou nome..."
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="onSearch()"
+            (input)="onSearch()">
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">Tipo:</label>
+        <select 
+          class="form-control filter-select"
+          [(ngModel)]="tipoFilter"
+          (change)="onTipoFilterChange()">
+          <option *ngFor="let option of tipoOptions" [value]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+      
+      <div class="filter-actions">
+        <button 
+          class="btn btn-outline-secondary"
+          (click)="loadCategorias()"
+          title="Atualizar lista">
+          <i class="fas fa-sync-alt"></i>
+        </button>
+        <button 
+          *ngIf="hasFilters"
+          class="btn btn-outline-secondary"
+          (click)="clearFilters()"
+          title="Limpar filtros">
+          <i class="fas fa-times"></i>
+          Limpar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela de categorias -->
+  <div class="table-card">
+    <div class="table-header">
+      <h3 class="table-title">Lista de Categorias</h3>
+      <div class="table-info">
+        <span class="total-items">
+          Total: {{ totalItems }} {{ totalItems === 1 ? 'categoria' : 'categorias' }}
+        </span>
+      </div>
+    </div>
+
+    <div class="table-content">
+      <!-- Loading state -->
+      <div *ngIf="loading" class="loading-state">
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span>Carregando categorias...</span>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="!loading && categorias.length === 0" class="empty-state">
+        <div class="empty-content">
+          <i class="fas fa-tags empty-icon"></i>
+          <h3>Nenhuma categoria encontrada</h3>
+          <p *ngIf="hasFilters">Não há categorias que correspondam aos filtros aplicados.</p>
+          <p *ngIf="!hasFilters">Comece cadastrando a primeira categoria.</p>
+          <button 
+            *ngIf="!hasFilters"
+            class="btn btn-primary"
+            (click)="newCategoria()">
+            <i class="fas fa-plus"></i>
+            Cadastrar Primeira Categoria
+          </button>
+          <button 
+            *ngIf="hasFilters"
+            class="btn btn-outline-secondary"
+            (click)="clearFilters()">
+            <i class="fas fa-times"></i>
+            Limpar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabela com dados -->
+      <div *ngIf="!loading && categorias.length > 0" class="table-wrapper">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>Descrição</th>
+              <th>Tipo</th>
+              <th>Categoria Pai</th>
+              <th>Status</th>
+              <th>Data Cadastro</th>
+              <th class="actions-column">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let categoria of categorias; trackBy: trackByFn">
+              <td>
+                <span class="codigo-badge">{{ categoria.codigo }}</span>
+              </td>
+              <td>
+                <div class="categoria-info">
+                  <strong>{{ categoria.nome }}</strong>
+                </div>
+              </td>
+              <td>
+                <span class="descricao" [title]="categoria.descricao">
+                  {{ categoria.descricao || '-' }}
+                </span>
+              </td>
+              <td>
+                <span 
+                  class="tipo-badge"
+                  [class]="getTipoClass(categoria.tipo)">
+                  <i class="fas" 
+                     [class.fa-arrow-up]="categoria.tipo === 'RECEITA'"
+                     [class.fa-arrow-down]="categoria.tipo === 'DESPESA'"></i>
+                  {{ formatTipo(categoria.tipo) }}
+                </span>
+              </td>
+              <td>
+                <span *ngIf="categoria.categoria_pai" class="categoria-pai">
+                  {{ categoria.categoria_pai.nome }}
+                </span>
+                <span *ngIf="!categoria.categoria_pai" class="text-muted">
+                  Categoria Principal
+                </span>
+              </td>
+              <td>
+                <span 
+                  class="status-badge"
+                  [class.status-active]="categoria.ativo"
+                  [class.status-inactive]="!categoria.ativo">
+                  <i class="fas" [class.fa-check-circle]="categoria.ativo" [class.fa-times-circle]="!categoria.ativo"></i>
+                  {{ categoria.ativo ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
+              <td>
+                <span class="data-cadastro">
+                  {{ categoria.created_at | date:'dd/MM/yyyy' }}
+                </span>
+              </td>
+              <td class="actions-column">
+                <div class="action-buttons">
+                  <button 
+                    class="btn btn-sm btn-outline-primary"
+                    (click)="editCategoria(categoria.id!)"
+                    title="Editar categoria">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button 
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="deleteCategoria(categoria.id!, categoria.nome)"
+                    title="Excluir categoria">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Paginação -->
+    <div *ngIf="!loading && categorias.length > 0" class="table-footer">
+      <div class="pagination-info">
+        Mostrando {{ startItem }} a {{ endItem }} de {{ totalItems }} registros
+      </div>
+      
+      <nav class="pagination-nav">
+        <ul class="pagination">
+          <li class="page-item" [class.disabled]="currentPage === 1">
+            <button 
+              class="page-link"
+              (click)="onPageChange(currentPage - 1)"
+              [disabled]="currentPage === 1">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+          </li>
+          
+          <li 
+            *ngFor="let page of [].constructor(totalPages); let i = index"
+            class="page-item"
+            [class.active]="currentPage === i + 1"
+            [class.disabled]="totalPages > 7 && Math.abs(currentPage - (i + 1)) > 2 && i + 1 !== 1 && i + 1 !== totalPages">
+            <button 
+              *ngIf="totalPages <= 7 || Math.abs(currentPage - (i + 1)) <= 2 || i + 1 === 1 || i + 1 === totalPages"
+              class="page-link"
+              (click)="onPageChange(i + 1)">
+              {{ i + 1 }}
+            </button>
+            <span 
+              *ngIf="totalPages > 7 && Math.abs(currentPage - (i + 1)) > 2 && i + 1 !== 1 && i + 1 !== totalPages && (i + 1 === 2 || i + 1 === totalPages - 1)"
+              class="page-ellipsis">
+              ...
+            </span>
+          </li>
+          
+          <li class="page-item" [class.disabled]="currentPage === totalPages">
+            <button 
+              class="page-link"
+              (click)="onPageChange(currentPage + 1)"
+              [disabled]="currentPage === totalPages">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>

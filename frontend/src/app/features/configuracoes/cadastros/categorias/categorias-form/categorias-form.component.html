@@ -1,0 +1,265 @@
+<!-- src/app/features/configuracoes/cadastros/categorias/categorias-form/categorias-form.component.html -->
+<div class="page-container">
+  <!-- Header da página -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <nav class="breadcrumb-nav">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+              <a routerLink="/configuracoes/cadastros/categorias">
+                <i class="fas fa-tags"></i>
+                Categorias
+              </a>
+            </li>
+            <li class="breadcrumb-item active">
+              {{ isEditMode ? 'Editar Categoria' : 'Nova Categoria' }}
+            </li>
+          </ol>
+        </nav>
+        <h1 class="page-title">
+          <i class="fas" [class.fa-edit]="isEditMode" [class.fa-plus]="!isEditMode"></i>
+          {{ isEditMode ? 'Editar Categoria' : 'Nova Categoria' }}
+        </h1>
+        <p class="page-subtitle">
+          {{ isEditMode ? 'Altere as informações da categoria' : 'Preencha os dados para cadastrar uma nova categoria' }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="loading-spinner">
+      <i class="fas fa-spinner fa-spin"></i>
+      <span>Carregando dados da categoria...</span>
+    </div>
+  </div>
+
+  <!-- Formulário -->
+  <div *ngIf="!loading" class="form-container">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <div class="form-card">
+        <div class="card-header">
+          <h3 class="card-title">Informações da Categoria</h3>
+          <p class="card-subtitle">Dados básicos de identificação e classificação</p>
+        </div>
+
+        <div class="card-content">
+          <div class="form-row">
+            <!-- Código da Categoria -->
+            <div class="form-group col-md-4">
+              <label for="codigo" class="form-label required">
+                Código da Categoria
+                <i class="fas fa-info-circle" 
+                   title="Código único para identificação"></i>
+              </label>
+              <input
+                type="text"
+                id="codigo"
+                class="form-control"
+                [class.is-invalid]="hasFieldError('codigo')"
+                formControlName="codigo"
+                placeholder="Ex: RECEITA001"
+                maxlength="20">
+              <div class="invalid-feedback" *ngIf="hasFieldError('codigo')">
+                {{ getFieldError('codigo') }}
+              </div>
+              <small class="form-text text-muted">
+                Use letras, números, traços e sublinhados
+              </small>
+            </div>
+
+            <!-- Tipo -->
+            <div class="form-group col-md-4">
+              <label for="tipo" class="form-label required">Tipo</label>
+              <select
+                id="tipo"
+                class="form-control"
+                [class.is-invalid]="hasFieldError('tipo')"
+                formControlName="tipo">
+                <option value="">Selecione o tipo</option>
+                <option 
+                  *ngFor="let option of tipoOptions" 
+                  [value]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              <div class="invalid-feedback" *ngIf="hasFieldError('tipo')">
+                {{ getFieldError('tipo') }}
+              </div>
+            </div>
+
+            <!-- Status -->
+            <div class="form-group col-md-4">
+              <label class="form-label">Status</label>
+              <div class="form-check-wrapper">
+                <div class="form-check form-switch">
+                  <input
+                    type="checkbox"
+                    id="ativo"
+                    class="form-check-input"
+                    formControlName="ativo">
+                  <label class="form-check-label" for="ativo">
+                    <span [class.text-success]="ativo?.value" [class.text-muted]="!ativo?.value">
+                      <i class="fas" [class.fa-check-circle]="ativo?.value" [class.fa-times-circle]="!ativo?.value"></i>
+                      {{ ativo?.value ? 'Ativo' : 'Inativo' }}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <!-- Nome da Categoria -->
+            <div class="form-group col-md-8">
+              <label for="nome" class="form-label required">Nome da Categoria</label>
+              <input
+                type="text"
+                id="nome"
+                class="form-control"
+                [class.is-invalid]="hasFieldError('nome')"
+                formControlName="nome"
+                placeholder="Ex: Vendas de Produtos"
+                maxlength="100">
+              <div class="invalid-feedback" *ngIf="hasFieldError('nome')">
+                {{ getFieldError('nome') }}
+              </div>
+            </div>
+
+            <!-- Categoria Pai -->
+            <div class="form-group col-md-4">
+              <label for="categoria_pai_id" class="form-label">
+                Categoria Pai
+                <i class="fas fa-info-circle" 
+                   title="Selecione uma categoria pai para criar uma subcategoria"></i>
+              </label>
+              <select
+                id="categoria_pai_id"
+                class="form-control"
+                [class.is-invalid]="hasFieldError('categoria_pai_id')"
+                formControlName="categoria_pai_id"
+                [disabled]="!tipo?.value || loadingCategoriasPai">
+                <option value="">Categoria Principal</option>
+                <option 
+                  *ngFor="let categoriaPai of categoriasPai" 
+                  [value]="categoriaPai.id">
+                  {{ categoriaPai.nome }}
+                </option>
+              </select>
+              <div class="invalid-feedback" *ngIf="hasFieldError('categoria_pai_id')">
+                {{ getFieldError('categoria_pai_id') }}
+              </div>
+              <small class="form-text text-muted" *ngIf="!tipo?.value">
+                Selecione primeiro o tipo da categoria
+              </small>
+              <small class="form-text text-muted" *ngIf="loadingCategoriasPai">
+                <i class="fas fa-spinner fa-spin"></i> Carregando categorias...
+              </small>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <!-- Descrição -->
+            <div class="form-group col-md-12">
+              <label for="descricao" class="form-label">Descrição</label>
+              <textarea
+                id="descricao"
+                class="form-control"
+                [class.is-invalid]="hasFieldError('descricao')"
+                formControlName="descricao"
+                placeholder="Descrição detalhada da categoria (opcional)"
+                rows="3"
+                maxlength="500"></textarea>
+              <div class="invalid-feedback" *ngIf="hasFieldError('descricao')">
+                {{ getFieldError('descricao') }}
+              </div>
+              <small class="form-text text-muted">
+                Máximo 500 caracteres
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview da Categoria -->
+      <div *ngIf="form.value.nome || form.value.codigo" class="form-card">
+        <div class="card-header">
+          <h3 class="card-title">
+            <i class="fas fa-eye"></i>
+            Pré-visualização
+          </h3>
+          <p class="card-subtitle">Como a categoria aparecerá no sistema</p>
+        </div>
+
+        <div class="card-content">
+          <div class="category-preview">
+            <div class="preview-header">
+              <span class="codigo-badge">{{ form.value.codigo || 'CÓDIGO' }}</span>
+              <span 
+                *ngIf="form.value.tipo"
+                class="tipo-badge"
+                [class.tipo-receita]="form.value.tipo === 'RECEITA'"
+                [class.tipo-despesa]="form.value.tipo === 'DESPESA'">
+                <i class="fas" 
+                   [class.fa-arrow-up]="form.value.tipo === 'RECEITA'"
+                   [class.fa-arrow-down]="form.value.tipo === 'DESPESA'"></i>
+                {{ form.value.tipo === 'RECEITA' ? 'Receita' : 'Despesa' }}
+              </span>
+              <span 
+                class="status-badge"
+                [class.status-active]="form.value.ativo"
+                [class.status-inactive]="!form.value.ativo">
+                <i class="fas" [class.fa-check-circle]="form.value.ativo" [class.fa-times-circle]="!form.value.ativo"></i>
+                {{ form.value.ativo ? 'Ativo' : 'Inativo' }}
+              </span>
+            </div>
+            
+            <div class="preview-content">
+              <h4>{{ form.value.nome || 'Nome da Categoria' }}</h4>
+              <p *ngIf="form.value.descricao" class="category-description">
+                {{ form.value.descricao }}
+              </p>
+              <p *ngIf="form.value.categoria_pai_id" class="category-parent">
+                <i class="fas fa-level-up-alt"></i>
+                Subcategoria de: 
+                <strong>{{ (categoriasPai.find(c => c.id == form.value.categoria_pai_id))?.nome }}</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ações do formulário -->
+      <div class="form-actions">
+        <div class="actions-left">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="onCancel()"
+            [disabled]="saving">
+            <i class="fas fa-times"></i>
+            Cancelar
+          </button>
+        </div>
+
+        <div class="actions-right">
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="form.invalid || saving">
+            <ng-container *ngIf="!saving">
+              <i class="fas" [class.fa-save]="isEditMode" [class.fa-plus]="!isEditMode"></i>
+              {{ isEditMode ? 'Salvar Alterações' : 'Cadastrar Categoria' }}
+            </ng-container>
+            <ng-container *ngIf="saving">
+              <i class="fas fa-spinner fa-spin"></i>
+              {{ isEditMode ? 'Salvando...' : 'Cadastrando...' }}
+            </ng-container>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

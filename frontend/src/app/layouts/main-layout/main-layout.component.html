@@ -1,0 +1,131 @@
+<!-- src/app/layouts/main-layout/main-layout.component.html -->
+<div class="app-layout">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <button 
+        class="sidebar-toggle" 
+        (click)="toggleSidebar()"
+        title="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h1 class="app-title">ERP Claude</h1>
+    </div>
+    
+    <div class="header-right">
+      <div class="user-menu dropdown">
+        <button 
+          class="user-button dropdown-toggle" 
+          type="button" 
+          data-bs-toggle="dropdown">
+          <i class="fas fa-user-circle"></i>
+          <span>{{ currentUser?.name || currentUser?.email }}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <a class="dropdown-item" href="#" (click)="logout()">
+              <i class="fas fa-sign-out-alt"></i>
+              Sair
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar" [class.collapsed]="sidebarCollapsed">
+    <nav class="sidebar-nav">
+      <ul class="nav-list">
+        <li 
+          class="nav-item" 
+          *ngFor="let item of menuItems"
+          [class.active]="item.routerLink && isActiveRoute(item.routerLink)">
+          
+          <!-- Menu Item Simples -->
+          <ng-container *ngIf="item.type === 'single'">
+            <a 
+              class="nav-link" 
+              [routerLink]="item.routerLink"
+              routerLinkActive="active">
+              <i [class]="item.icon"></i>
+              <span class="nav-text">{{ item.label }}</span>
+            </a>
+          </ng-container>
+
+          <!-- Menu Group (Financeiro, Configurações) -->
+          <ng-container *ngIf="item.type === 'group'">
+            <a 
+              class="nav-link group-toggle" 
+              (click)="toggleMenu(item)">
+              <i [class]="item.icon"></i>
+              <span class="nav-text">{{ item.label }}</span>
+              <i 
+                class="fas fa-chevron-down expand-icon"
+                [class.expanded]="item.expanded">
+              </i>
+            </a>
+            
+            <!-- Submenu -->
+            <ul class="submenu" [class.expanded]="item.expanded">
+              <li 
+                class="submenu-item"
+                *ngFor="let child of item.children"
+                [class.active]="child.routerLink && isActiveRoute(child.routerLink)">
+                
+                <!-- Submenu Item Simples -->
+                <ng-container *ngIf="!child.type || child.type !== 'subgroup'">
+                  <a 
+                    class="submenu-link" 
+                    [routerLink]="child.routerLink"
+                    routerLinkActive="active">
+                    <i [class]="child.icon"></i>
+                    <span class="submenu-text">{{ child.label }}</span>
+                  </a>
+                </ng-container>
+
+                <!-- Submenu Group (Cadastros de Tabelas) -->
+                <ng-container *ngIf="child.type === 'subgroup'">
+                  <a 
+                    class="submenu-link subgroup-toggle" 
+                    (click)="toggleMenu(child)">
+                    <i [class]="child.icon"></i>
+                    <span class="submenu-text">{{ child.label }}</span>
+                    <i 
+                      class="fas fa-chevron-down expand-icon"
+                      [class.expanded]="child.expanded">
+                    </i>
+                  </a>
+                  
+                  <!-- Sub-submenu -->
+                  <ul class="sub-submenu" [class.expanded]="child.expanded">
+                    <li 
+                      class="sub-submenu-item"
+                      *ngFor="let subchild of child.children"
+                      [class.active]="subchild.routerLink && isActiveRoute(subchild.routerLink)">
+                      <a 
+                        class="sub-submenu-link" 
+                        [routerLink]="subchild.routerLink"
+                        routerLinkActive="active">
+                        <i [class]="subchild.icon"></i>
+                        <span class="sub-submenu-text">{{ subchild.label }}</span>
+                      </a>
+                    </li>
+                  </ul>
+                </ng-container>
+              </li>
+            </ul>
+          </ng-container>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="app-main" [class.sidebar-collapsed]="sidebarCollapsed">
+    <div class="main-content">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

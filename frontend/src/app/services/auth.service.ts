@@ -1,126 +1,160 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
 import { Router } from '@angular/router';
+import { Observable, BehaviorSubject, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
-export interface LoginRequest {
-  username: string;
-  password: string;
-}
-
-export interface LoginResponse {
+interface LoginResponse {
   access_token: string;
   token_type: string;
+  user?: any;
 }
 
-export interface User {
-  id: number;
+interface User {
+  id?: number;
   email: string;
-  full_name: string;
-  is_active: boolean;
+  name?: string;
+  role?: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:8000';
-  private readonly TOKEN_KEY = 'access_token';
-  private readonly USER_KEY = 'user_data';
-  
-  private currentUserSubject = new BehaviorSubject<User | null>(this.getUserFromStorage());
-  public currentUser$ = this.currentUserSubject.asObservable();
+  private apiUrl = environment.apiUrl;
+  private currentUserSubject: BehaviorSubject<User | null>;
+  public currentUser: Observable<User | null>;
 
   constructor(
     private http: HttpClient,
     private router: Router
-  ) {}
-
-  login(email: string, password: string): Observable<LoginResponse> {
-    const loginData = new FormData();
-    loginData.append('username', email);
-    loginData.append('password', password);
-    loginData.append('grant_type', 'password');
-
-    return this.http.post<LoginResponse>(
-      `${this.API_URL}/api/v1/auth/login`, 
-      loginData
+  ) {
+    const savedUser = localStorage.getItem('currentUser');
+    this.currentUserSubject = new BehaviorSubject<User | null>(
+      savedUser ? JSON.parse(savedUser) : null
     );
+    this.currentUser = this.currentUserSubject.asObservable();
+  }
+
+  login(credentials: { username: string; password: string }): Observable<LoginResponse> {
+    const formData = new FormData();
+    formData.append('username', credentials.username);
+    formData.append('password', credentials.password);
+
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, formData)
+      .pipe(
+        map(response => {
+          if (response && response.access_token) {
+            this.saveAuthData(response);
+          }
+          return response;
+        }),
+        catchError(this.handleError)
+      );
   }
 
   loginJSON(email: string, password: string): Observable<LoginResponse> {
-    const loginData = {
-      username: email,
-      password: password
-    };
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const body = { username: email, password: password };
 
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
-
-    return this.http.post<LoginResponse>(
-      `${this.API_URL}/api/v1/auth/login`, 
-      loginData,
-      { headers }
-    );
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, body, { headers })
+      .pipe(
+        map(response => {
+          if (response && response.access_token) {
+            this.saveAuthData(response);
+          }
+          return response;
+        }),
+        catchError(this.handleError)
+      );
   }
 
-  saveAuthData(loginResponse: LoginResponse, userData?: User): void {
-    localStorage.setItem(this.TOKEN_KEY, loginResponse.access_token);
+  saveAuthData(response: LoginResponse, userData?: any): void {
+    localStorage.setItem('access_token', response.access_token);
+    localStorage.setItem('token_type', response.token_type || 'Bearer');
     
-    if (userData) {
-      localStorage.setItem(this.USER_KEY, JSON.stringify(userData));
-      this.currentUserSubject.next(userData);
-    }
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
-  }
-
-  private getUserFromStorage(): User | null {
-    const userData = localStorage.getItem(this.USER_KEY);
-    return userData ? JSON.parse(userData) : null;
+    const user = userData || response.user || { email: 'user@example.com' };
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    
+    this.currentUserSubject.next(user);
   }
 
   isAuthenticated(): boolean {
-    const token = this.getToken();
-    return !!token && !this.isTokenExpired(token);
+    const token = localStorage.getItem('access_token');
+    return !!token;
   }
 
-  private isTokenExpired(token: string): boolean {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const currentTime = Math.floor(Date.now() / 1000);
-      return payload.exp < currentTime;
-    } catch {
-      return true;
-    }
+  getToken(): string | null {
+    return localStorage.getItem('access_token');
   }
 
-  getAuthHeaders(): HttpHeaders {
-    const token = this.getToken();
-    return new HttpHeaders({
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    });
-  }
-
-  getCurrentUser(): Observable<User> {
-    return this.http.get<User>(
-      `${this.API_URL}/api/v1/users/me`,
-      { headers: this.getAuthHeaders() }
-    );
-  }
-
-  logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    this.currentUserSubject.next(null);
-    this.router.navigate(['/login']);
+  getTokenType(): string {
+    return localStorage.getItem('token_type') || 'Bearer';
   }
 
   getCurrentUserValue(): User | null {
     return this.currentUserSubject.value;
+  }
+
+  getMe(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/auth/me`)
+      .pipe(
+        map(user => {
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          this.currentUserSubject.next(user);
+          return user;
+        }),
+        catchError(this.handleError)
+      );
+  }
+
+  logout(): void {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('token_type');
+    localStorage.removeItem('currentUser');
+    this.currentUserSubject.next(null);
+    this.router.navigate(['/login']);
+  }
+
+  refreshToken(): Observable<LoginResponse> {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/refresh`, { refresh_token: refreshToken })
+      .pipe(
+        map(response => {
+          if (response && response.access_token) {
+            localStorage.setItem('access_token', response.access_token);
+          }
+          return response;
+        }),
+        catchError(error => {
+          this.logout();
+          return throwError(() => error);
+        })
+      );
+  }
+
+  private handleError(error: any): Observable<never> {
+    console.error('Auth Error:', error);
+    
+    let errorMessage = 'Ocorreu um erro na autenticação';
+    
+    if (error.error instanceof ErrorEvent) {
+      errorMessage = error.error.message;
+    } else {
+      if (error.status === 401) {
+        errorMessage = 'Credenciais inválidas';
+      } else if (error.status === 403) {
+        errorMessage = 'Acesso negado';
+      } else if (error.status === 0) {
+        errorMessage = 'Servidor não está respondendo';
+      }
+    }
+    
+    return throwError(() => ({ message: errorMessage, status: error.status }));
   }
 }
