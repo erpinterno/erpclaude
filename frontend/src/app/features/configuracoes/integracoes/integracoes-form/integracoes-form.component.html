@@ -1,0 +1,268 @@
+<div class="integracoes-form-container">
+  <div class="header">
+    <h2>{{ isEditing ? 'Editar Integração' : 'Nova Integração' }}</h2>
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary" (click)="onCancel()">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button 
+        type="submit" 
+        class="btn btn-primary" 
+        [disabled]="loading"
+        (click)="onSubmit()">
+        <i class="fas fa-save"></i> 
+        {{ loading ? 'Salvando...' : 'Salvar' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading && isEditing" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="sr-only">Carregando...</span>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <!-- Success -->
+  <div *ngIf="success" class="alert alert-success">
+    {{ success }}
+  </div>
+
+  <!-- Formulário -->
+  <form [formGroup]="integracaoForm" (ngSubmit)="onSubmit()" *ngIf="!loading || !isEditing">
+    
+    <!-- Informações Básicas -->
+    <div class="form-section">
+      <h4>Informações Básicas</h4>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="nome">Nome da Integração *</label>
+            <input 
+              type="text" 
+              id="nome"
+              class="form-control"
+              formControlName="nome"
+              [class.is-invalid]="isFieldInvalid('nome')"
+              placeholder="Digite o nome da integração">
+            <div *ngIf="isFieldInvalid('nome')" class="invalid-feedback">
+              {{ getFieldError('nome') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="tipo">Tipo de Integração *</label>
+            <select 
+              id="tipo"
+              class="form-control"
+              formControlName="tipo"
+              (change)="onTipoChange()"
+              [class.is-invalid]="isFieldInvalid('tipo')">
+              <option value="">Selecione o tipo</option>
+              <option *ngFor="let tipo of tiposDisponiveis" [value]="tipo.codigo">
+                {{ tipo.nome }}
+              </option>
+            </select>
+            <div *ngIf="isFieldInvalid('tipo')" class="invalid-feedback">
+              {{ getFieldError('tipo') }}
+            </div>
+            <small *ngIf="integracaoForm.get('tipo')?.value" class="form-text text-muted">
+              {{ getTipoDescricao(integracaoForm.get('tipo')?.value) }}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="descricao">Descrição</label>
+            <textarea 
+              id="descricao"
+              class="form-control"
+              formControlName="descricao"
+              rows="3"
+              [class.is-invalid]="isFieldInvalid('descricao')"
+              placeholder="Descreva o propósito desta integração..."></textarea>
+            <div *ngIf="isFieldInvalid('descricao')" class="invalid-feedback">
+              {{ getFieldError('descricao') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuração da API -->
+    <div class="form-section">
+      <h4>Configuração da API</h4>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="base_url">URL Base da API</label>
+            <input 
+              type="url" 
+              id="base_url"
+              class="form-control"
+              formControlName="base_url"
+              [class.is-invalid]="isFieldInvalid('base_url')"
+              placeholder="https://api.exemplo.com/v1/">
+            <div *ngIf="isFieldInvalid('base_url')" class="invalid-feedback">
+              {{ getFieldError('base_url') }}
+            </div>
+            <small class="form-text text-muted">
+              URL base para todas as chamadas da API
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="app_key">APP Key / Client ID</label>
+            <input 
+              type="text" 
+              id="app_key"
+              class="form-control"
+              formControlName="app_key"
+              [class.is-invalid]="isFieldInvalid('app_key')"
+              placeholder="Digite a chave da aplicação">
+            <div *ngIf="isFieldInvalid('app_key')" class="invalid-feedback">
+              {{ getFieldError('app_key') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="app_secret">APP Secret / Client Secret</label>
+            <input 
+              type="password" 
+              id="app_secret"
+              class="form-control"
+              formControlName="app_secret"
+              [class.is-invalid]="isFieldInvalid('app_secret')"
+              placeholder="Digite o secret da aplicação">
+            <div *ngIf="isFieldInvalid('app_secret')" class="invalid-feedback">
+              {{ getFieldError('app_secret') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="token">Token de Acesso</label>
+            <textarea 
+              id="token"
+              class="form-control"
+              formControlName="token"
+              rows="3"
+              [class.is-invalid]="isFieldInvalid('token')"
+              placeholder="Cole aqui o token de acesso (se aplicável)"></textarea>
+            <div *ngIf="isFieldInvalid('token')" class="invalid-feedback">
+              {{ getFieldError('token') }}
+            </div>
+            <small class="form-text text-muted">
+              Token de autenticação para APIs que usam Bearer Token
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configurações Avançadas -->
+    <div class="form-section">
+      <h4>Configurações Avançadas</h4>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="configuracoes_extras">
+              Configurações Extras (JSON)
+              <button 
+                type="button" 
+                class="btn btn-sm btn-outline-secondary ml-2"
+                (click)="formatJson()"
+                title="Formatar JSON">
+                <i class="fas fa-code"></i>
+              </button>
+            </label>
+            <textarea 
+              id="configuracoes_extras"
+              class="form-control code-editor"
+              formControlName="configuracoes_extras"
+              rows="8"
+              placeholder='&#123;
+  "timeout": 30,
+  "retry_attempts": 3,
+  "custom_headers": &#123;
+    "User-Agent": "MeuERP/1.0"
+  &#125;
+&#125;'></textarea>
+            <small class="form-text text-muted">
+              Configurações adicionais em formato JSON (opcional)
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="form-section">
+      <h4>Status</h4>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-check">
+            <input 
+              type="checkbox" 
+              id="ativo"
+              class="form-check-input"
+              formControlName="ativo">
+            <label class="form-check-label" for="ativo">
+              Integração Ativa
+            </label>
+            <small class="form-text text-muted d-block">
+              Apenas integrações ativas podem ser utilizadas
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </form>
+
+  <!-- Dicas de Configuração -->
+  <div class="card mt-4" *ngIf="!loading">
+    <div class="card-header">
+      <h5><i class="fas fa-lightbulb"></i> Dicas de Configuração</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <h6><i class="fas fa-key text-primary"></i> Credenciais</h6>
+          <p class="small">
+            Mantenha suas chaves de API seguras. Nunca compartilhe APP_SECRET ou tokens de acesso.
+          </p>
+        </div>
+        <div class="col-md-4">
+          <h6><i class="fas fa-plug text-success"></i> Teste</h6>
+          <p class="small">
+            Após salvar, use a tela de "Teste de APIs" para verificar se a conexão está funcionando.
+          </p>
+        </div>
+        <div class="col-md-4">
+          <h6><i class="fas fa-cog text-warning"></i> Configurações</h6>
+          <p class="small">
+            Use as configurações extras para personalizar timeouts, headers e outros parâmetros.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

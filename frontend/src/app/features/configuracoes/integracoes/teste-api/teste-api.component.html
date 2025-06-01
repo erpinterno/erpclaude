@@ -1,0 +1,266 @@
+<div class="teste-api-container">
+  <div class="header">
+    <h2>Teste de APIs e Integrações</h2>
+    <button class="btn btn-secondary" (click)="voltarParaLista()">
+      <i class="fas fa-arrow-left"></i> Voltar
+    </button>
+  </div>
+
+  <!-- Configuração Rápida do Omie -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5><i class="fas fa-rocket"></i> Configuração Rápida - Omie</h5>
+    </div>
+    <div class="card-body">
+      <p class="text-muted">Configure rapidamente a integração com o Omie usando suas chaves de API:</p>
+      
+      <form [formGroup]="omieForm" class="row">
+        <div class="col-md-5">
+          <div class="form-group">
+            <label for="app_key">APP_KEY *</label>
+            <input 
+              type="text" 
+              id="app_key"
+              class="form-control"
+              formControlName="app_key"
+              [class.is-invalid]="isFieldInvalid(omieForm, 'app_key')"
+              placeholder="Digite a APP_KEY do Omie">
+            <div *ngIf="isFieldInvalid(omieForm, 'app_key')" class="invalid-feedback">
+              {{ getFieldError(omieForm, 'app_key') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="form-group">
+            <label for="app_secret">APP_SECRET *</label>
+            <input 
+              type="password" 
+              id="app_secret"
+              class="form-control"
+              formControlName="app_secret"
+              [class.is-invalid]="isFieldInvalid(omieForm, 'app_secret')"
+              placeholder="Digite a APP_SECRET do Omie">
+            <div *ngIf="isFieldInvalid(omieForm, 'app_secret')" class="invalid-feedback">
+              {{ getFieldError(omieForm, 'app_secret') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button 
+              type="button" 
+              class="btn btn-success btn-block"
+              [disabled]="configurandoOmie"
+              (click)="configurarOmieRapido()">
+              <i class="fas fa-cog"></i>
+              {{ configurandoOmie ? 'Configurando...' : 'Configurar' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Teste de Conexão e Sincronização -->
+  <div class="row">
+    <!-- Teste de Conexão -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-plug"></i> Teste de Conexão</h5>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="testeForm">
+            <div class="form-group">
+              <label for="integracao_teste">Integração *</label>
+              <select 
+                id="integracao_teste"
+                class="form-control"
+                formControlName="integracao_id"
+                [class.is-invalid]="isFieldInvalid(testeForm, 'integracao_id')">
+                <option value="">Selecione uma integração</option>
+                <option *ngFor="let integracao of integracoes" [value]="integracao.id">
+                  {{ integracao.nome }} ({{ integracao.tipo }})
+                </option>
+              </select>
+              <div *ngIf="isFieldInvalid(testeForm, 'integracao_id')" class="invalid-feedback">
+                {{ getFieldError(testeForm, 'integracao_id') }}
+              </div>
+            </div>
+
+            <button 
+              type="button" 
+              class="btn btn-primary btn-block"
+              [disabled]="testando || testeForm.get('integracao_id')?.invalid"
+              (click)="testarConexao()">
+              <i class="fas fa-plug"></i>
+              {{ testando ? 'Testando...' : 'Testar Conexão' }}
+            </button>
+          </form>
+
+          <!-- Resultado do Teste -->
+          <div *ngIf="ultimoTeste" class="mt-3">
+            <div class="alert" [ngClass]="ultimoTeste.sucesso ? 'alert-success' : 'alert-danger'">
+              <h6>
+                <i [class]="ultimoTeste.sucesso ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                {{ ultimoTeste.sucesso ? 'Sucesso!' : 'Falha!' }}
+              </h6>
+              <p class="mb-0">{{ ultimoTeste.mensagem }}</p>
+              
+              <div *ngIf="ultimoTeste.detalhes" class="mt-2">
+                <small class="text-muted">Detalhes:</small>
+                <pre class="small">{{ ultimoTeste.detalhes | json }}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sincronização de Dados -->
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5><i class="fas fa-sync"></i> Sincronização de Dados</h5>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="testeForm">
+            <div class="form-group">
+              <label for="tipo_dados">Tipo de Dados *</label>
+              <select 
+                id="tipo_dados"
+                class="form-control"
+                formControlName="tipo_dados">
+                <option *ngFor="let tipo of tiposDados" [value]="tipo.value">
+                  {{ tipo.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="registros_por_pagina">Registros por Página</label>
+              <input 
+                type="number" 
+                id="registros_por_pagina"
+                class="form-control"
+                formControlName="registros_por_pagina"
+                [class.is-invalid]="isFieldInvalid(testeForm, 'registros_por_pagina')"
+                min="1" 
+                max="100">
+              <div *ngIf="isFieldInvalid(testeForm, 'registros_por_pagina')" class="invalid-feedback">
+                {{ getFieldError(testeForm, 'registros_por_pagina') }}
+              </div>
+            </div>
+
+            <button 
+              type="button" 
+              class="btn btn-warning btn-block"
+              [disabled]="sincronizando || testeForm.get('integracao_id')?.invalid"
+              (click)="sincronizarDados()">
+              <i class="fas fa-sync"></i>
+              {{ sincronizando ? 'Sincronizando...' : 'Sincronizar Dados' }}
+            </button>
+          </form>
+
+          <!-- Resultado da Sincronização -->
+          <div *ngIf="ultimaSincronizacao" class="mt-3">
+            <div class="alert" [ngClass]="ultimaSincronizacao.sucesso ? 'alert-success' : 'alert-danger'">
+              <h6>
+                <i [class]="ultimaSincronizacao.sucesso ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                {{ ultimaSincronizacao.sucesso ? 'Sincronização Concluída!' : 'Falha na Sincronização!' }}
+              </h6>
+              
+              <div class="row text-center mt-2">
+                <div class="col-3">
+                  <strong>{{ ultimaSincronizacao.total_processados }}</strong>
+                  <br><small>Processados</small>
+                </div>
+                <div class="col-3">
+                  <strong class="text-success">{{ ultimaSincronizacao.total_importados }}</strong>
+                  <br><small>Importados</small>
+                </div>
+                <div class="col-3">
+                  <strong class="text-info">{{ ultimaSincronizacao.total_atualizadas }}</strong>
+                  <br><small>Atualizados</small>
+                </div>
+                <div class="col-3">
+                  <strong class="text-danger">{{ ultimaSincronizacao.total_erros }}</strong>
+                  <br><small>Erros</small>
+                </div>
+              </div>
+
+              <div *ngIf="ultimaSincronizacao.mensagens?.length" class="mt-2">
+                <small class="text-muted">Mensagens:</small>
+                <ul class="small mb-0">
+                  <li *ngFor="let mensagem of ultimaSincronizacao.mensagens">{{ mensagem }}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Integrações Disponíveis -->
+  <div class="card mt-4">
+    <div class="card-header">
+      <h5><i class="fas fa-list"></i> Integrações Disponíveis</h5>
+    </div>
+    <div class="card-body">
+      <div *ngIf="loading" class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="sr-only">Carregando...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && integracoes.length === 0" class="text-center text-muted">
+        <p>Nenhuma integração ativa encontrada.</p>
+        <button class="btn btn-primary" (click)="voltarParaLista()">
+          <i class="fas fa-plus"></i> Criar Integração
+        </button>
+      </div>
+
+      <div *ngIf="!loading && integracoes.length > 0" class="row">
+        <div *ngFor="let integracao of integracoes" class="col-md-4 mb-3">
+          <div class="card border-left-primary">
+            <div class="card-body">
+              <h6 class="card-title">{{ integracao.nome }}</h6>
+              <p class="card-text">
+                <span class="badge badge-info">{{ integracao.tipo }}</span>
+                <span class="badge ml-1" [ngClass]="integracao.testado ? 'badge-success' : 'badge-warning'">
+                  {{ integracao.testado ? 'Testado' : 'Não testado' }}
+                </span>
+              </p>
+              <small class="text-muted">{{ integracao.descricao || 'Sem descrição' }}</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Informações de Ajuda -->
+  <div class="card mt-4">
+    <div class="card-header">
+      <h5><i class="fas fa-info-circle"></i> Como Usar</h5>
+    </div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-4">
+          <h6><i class="fas fa-cog text-success"></i> 1. Configurar</h6>
+          <p class="small">Use a configuração rápida do Omie ou crie uma nova integração na lista principal.</p>
+        </div>
+        <div class="col-md-4">
+          <h6><i class="fas fa-plug text-primary"></i> 2. Testar</h6>
+          <p class="small">Teste a conexão com a API para verificar se as credenciais estão corretas.</p>
+        </div>
+        <div class="col-md-4">
+          <h6><i class="fas fa-sync text-warning"></i> 3. Sincronizar</h6>
+          <p class="small">Importe dados da integração para o sistema local.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

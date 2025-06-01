@@ -1,0 +1,299 @@
+.empresas-form-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #dee2e6;
+
+  h2 {
+    margin: 0;
+    color: #495057;
+    font-weight: 600;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 120px;
+      justify-content: center;
+    }
+  }
+}
+
+.form-section {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+
+  h4 {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #007bff;
+    font-size: 18px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+
+    label {
+      font-weight: 500;
+      color: #495057;
+      margin-bottom: 8px;
+      display: block;
+      font-size: 14px;
+
+      &:after {
+        content: " *";
+        color: #dc3545;
+        display: none;
+      }
+    }
+
+    .form-control {
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      padding: 10px 12px;
+      font-size: 14px;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+      &:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+      }
+
+      &.is-invalid {
+        border-color: #dc3545;
+        
+        &:focus {
+          border-color: #dc3545;
+          box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+      }
+
+      &::placeholder {
+        color: #6c757d;
+        opacity: 1;
+      }
+    }
+
+    select.form-control {
+      cursor: pointer;
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 5px;
+
+      .form-control {
+        flex: 1;
+
+        &:first-child {
+          max-width: 80px;
+        }
+      }
+    }
+
+    .invalid-feedback {
+      display: block;
+      width: 100%;
+      margin-top: 5px;
+      font-size: 12px;
+      color: #dc3545;
+    }
+  }
+
+  .form-check {
+    padding-top: 8px;
+    
+    .form-check-input {
+      margin-top: 4px;
+    }
+
+    .form-check-label {
+      font-weight: 400;
+      margin-left: 5px;
+      cursor: pointer;
+    }
+  }
+}
+
+// Campos obrigatórios
+.form-group:has(.form-control[formControlName="razao_social"]) label:after {
+  display: inline;
+}
+
+.spinner-border {
+  margin: 40px 0;
+}
+
+.alert {
+  margin: 20px 0;
+  border-radius: 6px;
+  
+  &.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+  }
+
+  &.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+}
+
+// Responsividade
+@media (max-width: 768px) {
+  .empresas-form-container {
+    padding: 10px;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+
+    .header-actions {
+      width: 100%;
+      
+      .btn {
+        flex: 1;
+      }
+    }
+  }
+
+  .form-section {
+    padding: 15px;
+    margin-bottom: 15px;
+
+    h4 {
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+
+      .input-group {
+        flex-direction: column;
+        gap: 10px;
+
+        .form-control:first-child {
+          max-width: none;
+        }
+      }
+    }
+  }
+
+  .row {
+    margin: 0;
+    
+    [class*="col-"] {
+      padding: 0 5px;
+      margin-bottom: 10px;
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .form-section {
+    padding: 10px;
+
+    .form-group {
+      margin-bottom: 12px;
+
+      .form-control {
+        padding: 8px 10px;
+        font-size: 13px;
+      }
+    }
+  }
+
+  .header-actions {
+    flex-direction: column;
+    
+    .btn {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+  }
+}
+
+// Animações
+.form-section {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Estados dos botões
+.btn {
+  transition: all 0.2s ease-in-out;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Melhorias visuais para campos de telefone
+.input-group {
+  .form-control:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: 0;
+  }
+
+  .form-control:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .form-control:not(:first-child):not(:last-child) {
+    border-radius: 0;
+    border-right: 0;
+  }
+}
+
+// Destaque para seções
+.form-section:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transition: box-shadow 0.2s ease-in-out;
+}

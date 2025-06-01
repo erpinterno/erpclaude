@@ -1,0 +1,476 @@
+<div class="empresas-form-container">
+  <div class="header">
+    <h2>{{ isEditing ? 'Editar Empresa' : 'Nova Empresa' }}</h2>
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary" (click)="onCancel()">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+      <button 
+        type="submit" 
+        class="btn btn-primary" 
+        [disabled]="loading"
+        (click)="onSubmit()">
+        <i class="fas fa-save"></i> 
+        {{ loading ? 'Salvando...' : 'Salvar' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading && isEditing" class="text-center">
+    <div class="spinner-border" role="status">
+      <span class="sr-only">Carregando...</span>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <!-- Success -->
+  <div *ngIf="success" class="alert alert-success">
+    {{ success }}
+  </div>
+
+  <!-- Formulário -->
+  <form [formGroup]="empresaForm" (ngSubmit)="onSubmit()" *ngIf="!loading || !isEditing">
+    
+    <!-- Dados Básicos -->
+    <div class="form-section">
+      <h4>Dados Básicos</h4>
+      <div class="row">
+        <div class="col-md-8">
+          <div class="form-group">
+            <label for="razao_social">Razão Social *</label>
+            <input 
+              type="text" 
+              id="razao_social"
+              class="form-control"
+              formControlName="razao_social"
+              [class.is-invalid]="isFieldInvalid('razao_social')"
+              placeholder="Digite a razão social">
+            <div *ngIf="isFieldInvalid('razao_social')" class="invalid-feedback">
+              {{ getFieldError('razao_social') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="cnpj">CNPJ</label>
+            <input 
+              type="text" 
+              id="cnpj"
+              class="form-control"
+              formControlName="cnpj"
+              (input)="formatCnpj($event)"
+              [class.is-invalid]="isFieldInvalid('cnpj')"
+              placeholder="00.000.000/0000-00">
+            <div *ngIf="isFieldInvalid('cnpj')" class="invalid-feedback">
+              {{ getFieldError('cnpj') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="nome_fantasia">Nome Fantasia</label>
+            <input 
+              type="text" 
+              id="nome_fantasia"
+              class="form-control"
+              formControlName="nome_fantasia"
+              [class.is-invalid]="isFieldInvalid('nome_fantasia')"
+              placeholder="Digite o nome fantasia">
+            <div *ngIf="isFieldInvalid('nome_fantasia')" class="invalid-feedback">
+              {{ getFieldError('nome_fantasia') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="inscricao_estadual">Inscrição Estadual</label>
+            <input 
+              type="text" 
+              id="inscricao_estadual"
+              class="form-control"
+              formControlName="inscricao_estadual"
+              [class.is-invalid]="isFieldInvalid('inscricao_estadual')">
+            <div *ngIf="isFieldInvalid('inscricao_estadual')" class="invalid-feedback">
+              {{ getFieldError('inscricao_estadual') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="inscricao_municipal">Inscrição Municipal</label>
+            <input 
+              type="text" 
+              id="inscricao_municipal"
+              class="form-control"
+              formControlName="inscricao_municipal"
+              [class.is-invalid]="isFieldInvalid('inscricao_municipal')">
+            <div *ngIf="isFieldInvalid('inscricao_municipal')" class="invalid-feedback">
+              {{ getFieldError('inscricao_municipal') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="inscricao_suframa">Inscrição SUFRAMA</label>
+            <input 
+              type="text" 
+              id="inscricao_suframa"
+              class="form-control"
+              formControlName="inscricao_suframa"
+              [class.is-invalid]="isFieldInvalid('inscricao_suframa')">
+            <div *ngIf="isFieldInvalid('inscricao_suframa')" class="invalid-feedback">
+              {{ getFieldError('inscricao_suframa') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Endereço -->
+    <div class="form-section">
+      <h4>Endereço</h4>
+      <div class="row">
+        <div class="col-md-8">
+          <div class="form-group">
+            <label for="endereco">Endereço</label>
+            <input 
+              type="text" 
+              id="endereco"
+              class="form-control"
+              formControlName="endereco"
+              [class.is-invalid]="isFieldInvalid('endereco')"
+              placeholder="Digite o endereço">
+            <div *ngIf="isFieldInvalid('endereco')" class="invalid-feedback">
+              {{ getFieldError('endereco') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="endereco_numero">Número</label>
+            <input 
+              type="text" 
+              id="endereco_numero"
+              class="form-control"
+              formControlName="endereco_numero"
+              [class.is-invalid]="isFieldInvalid('endereco_numero')">
+            <div *ngIf="isFieldInvalid('endereco_numero')" class="invalid-feedback">
+              {{ getFieldError('endereco_numero') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="cep">CEP</label>
+            <input 
+              type="text" 
+              id="cep"
+              class="form-control"
+              formControlName="cep"
+              (input)="formatCep($event)"
+              [class.is-invalid]="isFieldInvalid('cep')"
+              placeholder="00000-000">
+            <div *ngIf="isFieldInvalid('cep')" class="invalid-feedback">
+              {{ getFieldError('cep') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="bairro">Bairro</label>
+            <input 
+              type="text" 
+              id="bairro"
+              class="form-control"
+              formControlName="bairro"
+              [class.is-invalid]="isFieldInvalid('bairro')">
+            <div *ngIf="isFieldInvalid('bairro')" class="invalid-feedback">
+              {{ getFieldError('bairro') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-group">
+            <label for="cidade">Cidade</label>
+            <input 
+              type="text" 
+              id="cidade"
+              class="form-control"
+              formControlName="cidade"
+              [class.is-invalid]="isFieldInvalid('cidade')">
+            <div *ngIf="isFieldInvalid('cidade')" class="invalid-feedback">
+              {{ getFieldError('cidade') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="estado">Estado</label>
+            <select 
+              id="estado"
+              class="form-control"
+              formControlName="estado"
+              [class.is-invalid]="isFieldInvalid('estado')">
+              <option value="">Selecione</option>
+              <option *ngFor="let estado of estados" [value]="estado">{{ estado }}</option>
+            </select>
+            <div *ngIf="isFieldInvalid('estado')" class="invalid-feedback">
+              {{ getFieldError('estado') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="complemento">Complemento</label>
+            <input 
+              type="text" 
+              id="complemento"
+              class="form-control"
+              formControlName="complemento"
+              [class.is-invalid]="isFieldInvalid('complemento')">
+            <div *ngIf="isFieldInvalid('complemento')" class="invalid-feedback">
+              {{ getFieldError('complemento') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contato -->
+    <div class="form-section">
+      <h4>Contato</h4>
+      <div class="row">
+        <div class="col-md-3">
+          <div class="form-group">
+            <label>Telefone 1</label>
+            <div class="input-group">
+              <input 
+                type="text" 
+                class="form-control"
+                formControlName="telefone1_ddd"
+                placeholder="DDD"
+                maxlength="3">
+              <input 
+                type="text" 
+                class="form-control"
+                formControlName="telefone1_numero"
+                (input)="formatTelefone('telefone1_numero', $event)"
+                placeholder="Número">
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            <label>Telefone 2</label>
+            <div class="input-group">
+              <input 
+                type="text" 
+                class="form-control"
+                formControlName="telefone2_ddd"
+                placeholder="DDD"
+                maxlength="3">
+              <input 
+                type="text" 
+                class="form-control"
+                formControlName="telefone2_numero"
+                (input)="formatTelefone('telefone2_numero', $event)"
+                placeholder="Número">
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            <label>Fax</label>
+            <div class="input-group">
+              <input 
+                type="text" 
+                class="form-control"
+                formControlName="fax_ddd"
+                placeholder="DDD"
+                maxlength="3">
+              <input 
+                type="text" 
+                class="form-control"
+                formControlName="fax_numero"
+                (input)="formatTelefone('fax_numero', $event)"
+                placeholder="Número">
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input 
+              type="email" 
+              id="email"
+              class="form-control"
+              formControlName="email"
+              [class.is-invalid]="isFieldInvalid('email')"
+              placeholder="email@exemplo.com">
+            <div *ngIf="isFieldInvalid('email')" class="invalid-feedback">
+              {{ getFieldError('email') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label for="homepage">Homepage</label>
+            <input 
+              type="url" 
+              id="homepage"
+              class="form-control"
+              formControlName="homepage"
+              [class.is-invalid]="isFieldInvalid('homepage')"
+              placeholder="https://www.exemplo.com">
+            <div *ngIf="isFieldInvalid('homepage')" class="invalid-feedback">
+              {{ getFieldError('homepage') }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Informações Fiscais -->
+    <div class="form-section">
+      <h4>Informações Fiscais</h4>
+      <div class="row">
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="tipo_atividade">Tipo de Atividade</label>
+            <select 
+              id="tipo_atividade"
+              class="form-control"
+              formControlName="tipo_atividade">
+              <option *ngFor="let tipo of tiposAtividade" [value]="tipo.value">
+                {{ tipo.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="codigo_regime_tributario">Regime Tributário</label>
+            <select 
+              id="codigo_regime_tributario"
+              class="form-control"
+              formControlName="codigo_regime_tributario">
+              <option *ngFor="let regime of regimesTributarios" [value]="regime.value">
+                {{ regime.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="cnae">CNAE</label>
+            <input 
+              type="text" 
+              id="cnae"
+              class="form-control"
+              formControlName="cnae"
+              [class.is-invalid]="isFieldInvalid('cnae')">
+            <div *ngIf="isFieldInvalid('cnae')" class="invalid-feedback">
+              {{ getFieldError('cnae') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label for="data_abertura">Data de Abertura</label>
+            <input 
+              type="date" 
+              id="data_abertura"
+              class="form-control"
+              formControlName="data_abertura"
+              [class.is-invalid]="isFieldInvalid('data_abertura')">
+            <div *ngIf="isFieldInvalid('data_abertura')" class="invalid-feedback">
+              {{ getFieldError('data_abertura') }}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <div class="form-check">
+              <input 
+                type="checkbox" 
+                id="optante_simples_nacional"
+                class="form-check-input"
+                [checked]="empresaForm.get('optante_simples_nacional')?.value === 'S'"
+                (change)="empresaForm.patchValue({optante_simples_nacional: $event.target.checked ? 'S' : 'N'})">
+              <label class="form-check-label" for="optante_simples_nacional">
+                Optante Simples Nacional
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observações -->
+    <div class="form-section">
+      <h4>Observações</h4>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="observacoes">Observações</label>
+            <textarea 
+              id="observacoes"
+              class="form-control"
+              formControlName="observacoes"
+              rows="4"
+              placeholder="Digite observações sobre a empresa..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="form-section">
+      <h4>Status</h4>
+      <div class="row">
+        <div class="col-md-3">
+          <div class="form-check">
+            <input 
+              type="checkbox" 
+              id="inativo"
+              class="form-check-input"
+              [checked]="empresaForm.get('inativo')?.value === 'S'"
+              (change)="empresaForm.patchValue({inativo: $event.target.checked ? 'S' : 'N'})">
+            <label class="form-check-label" for="inativo">
+              Empresa Inativa
+            </label>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-check">
+            <input 
+              type="checkbox" 
+              id="bloqueado"
+              class="form-check-input"
+              [checked]="empresaForm.get('bloqueado')?.value === 'S'"
+              (change)="empresaForm.patchValue({bloqueado: $event.target.checked ? 'S' : 'N'})">
+            <label class="form-check-label" for="bloqueado">
+              Empresa Bloqueada
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </form>
+</div>

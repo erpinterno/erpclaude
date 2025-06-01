@@ -57,6 +57,10 @@ const routes: Routes = [
             loadChildren: () => import('./features/configuracoes/empresa/empresa.module').then(m => m.EmpresaModule)
           },
           {
+            path: 'integracoes',
+            loadChildren: () => import('./features/configuracoes/integracoes/integracoes.module').then(m => m.IntegracoesModule)
+          },
+          {
             path: 'cadastros',
             children: [
               {
@@ -86,6 +90,10 @@ const routes: Routes = [
               {
                 path: 'plano-contas',
                 loadChildren: () => import('./features/configuracoes/cadastros/plano-contas/plano-contas.module').then(m => m.PlanoContasModule)
+              },
+              {
+                path: 'empresas',
+                loadChildren: () => import('./features/configuracoes/cadastros/empresas/empresas.module').then(m => m.EmpresasModule)
               }
             ]
           }
