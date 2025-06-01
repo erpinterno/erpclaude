@@ -26,6 +26,9 @@ export class IntegracoesListComponent implements OnInit {
   // Tipos disponíveis
   tipos: any[] = [];
 
+  // Expose Math to template
+  Math = Math;
+
   constructor(
     private integracoesService: IntegracoesService,
     private router: Router
@@ -38,10 +41,10 @@ export class IntegracoesListComponent implements OnInit {
 
   loadTipos(): void {
     this.integracoesService.getTiposDisponiveis().subscribe({
-      next: (response) => {
+      next: (response: any) => {
         this.tipos = response.tipos;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Erro ao carregar tipos:', error);
       }
     });
@@ -64,7 +67,7 @@ export class IntegracoesListComponent implements OnInit {
         this.totalPages = response.totalPages;
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         this.error = 'Erro ao carregar integrações: ' + (error.error?.detail || error.message);
         this.loading = false;
       }
@@ -96,7 +99,7 @@ export class IntegracoesListComponent implements OnInit {
         next: () => {
           this.loadIntegracoes();
         },
-        error: (error) => {
+        error: (error: any) => {
           this.error = 'Erro ao excluir integração: ' + (error.error?.detail || error.message);
         }
       });
@@ -117,7 +120,7 @@ export class IntegracoesListComponent implements OnInit {
         }
         this.loadIntegracoes(); // Recarregar para atualizar status
       },
-      error: (error) => {
+      error: (error: any) => {
         alert(`❌ Erro ao testar integração:\n\n${error.error?.detail || error.message}`);
       }
     });
@@ -135,7 +138,7 @@ export class IntegracoesListComponent implements OnInit {
         alert('✅ Integração do Omie configurada com sucesso!');
         this.loadIntegracoes();
       },
-      error: (error) => {
+      error: (error: any) => {
         alert(`❌ Erro ao configurar Omie:\n\n${error.error?.detail || error.message}`);
       }
     });

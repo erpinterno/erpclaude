@@ -32,11 +32,11 @@ class EmpresaBase(BaseModel):
     homepage: Optional[str] = Field(None, max_length=255)
     
     # Informações fiscais
-    optante_simples_nacional: Optional[str] = Field("N", regex="^[SN]$")
+    optante_simples_nacional: Optional[str] = Field("N", pattern="^[SN]$")
     data_abertura: Optional[date] = None
     cnae: Optional[str] = Field(None, max_length=10)
-    tipo_atividade: Optional[str] = Field("0", regex="^[0-5]$")
-    codigo_regime_tributario: Optional[str] = Field("1", regex="^[1-3]$")
+    tipo_atividade: Optional[str] = Field("0", pattern="^[0-5]$")
+    codigo_regime_tributario: Optional[str] = Field("1", pattern="^[1-3]$")
     
     # Informações bancárias
     codigo_banco: Optional[str] = Field(None, max_length=10)
@@ -49,8 +49,8 @@ class EmpresaBase(BaseModel):
     observacoes: Optional[str] = None
     
     # Status
-    inativo: Optional[str] = Field("N", regex="^[SN]$")
-    bloqueado: Optional[str] = Field("N", regex="^[SN]$")
+    inativo: Optional[str] = Field("N", pattern="^[SN]$")
+    bloqueado: Optional[str] = Field("N", pattern="^[SN]$")
 
 class EmpresaCreate(EmpresaBase):
     pass
@@ -85,11 +85,11 @@ class EmpresaUpdate(BaseModel):
     homepage: Optional[str] = Field(None, max_length=255)
     
     # Informações fiscais
-    optante_simples_nacional: Optional[str] = Field(None, regex="^[SN]$")
+    optante_simples_nacional: Optional[str] = Field(None, pattern="^[SN]$")
     data_abertura: Optional[date] = None
     cnae: Optional[str] = Field(None, max_length=10)
-    tipo_atividade: Optional[str] = Field(None, regex="^[0-5]$")
-    codigo_regime_tributario: Optional[str] = Field(None, regex="^[1-3]$")
+    tipo_atividade: Optional[str] = Field(None, pattern="^[0-5]$")
+    codigo_regime_tributario: Optional[str] = Field(None, pattern="^[1-3]$")
     
     # Informações bancárias
     codigo_banco: Optional[str] = Field(None, max_length=10)
@@ -102,8 +102,8 @@ class EmpresaUpdate(BaseModel):
     observacoes: Optional[str] = None
     
     # Status
-    inativo: Optional[str] = Field(None, regex="^[SN]$")
-    bloqueado: Optional[str] = Field(None, regex="^[SN]$")
+    inativo: Optional[str] = Field(None, pattern="^[SN]$")
+    bloqueado: Optional[str] = Field(None, pattern="^[SN]$")
 
 class EmpresaInDB(EmpresaBase):
     id: int

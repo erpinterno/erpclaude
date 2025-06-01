@@ -79,6 +79,26 @@ export const routes: Routes = [
         ]
       },
 
+      // Módulo Configurações (novo)
+      {
+        path: 'configuracoes',
+        children: [
+          {
+            path: 'cadastros',
+            children: [
+              {
+                path: 'empresas',
+                loadChildren: () => import('./features/configuracoes/cadastros/empresas/empresas.module').then(m => m.EmpresasModule)
+              }
+            ]
+          },
+          {
+            path: 'integracoes',
+            loadChildren: () => import('./features/configuracoes/integracoes/integracoes.module').then(m => m.IntegracoesModule)
+          }
+        ]
+      },
+
       // Redireciona para dashboard se não especificado
       {
         path: '',

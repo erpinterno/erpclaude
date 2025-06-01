@@ -22,6 +22,9 @@ export class EmpresasListComponent implements OnInit {
   searchTerm = '';
   ativoApenas = false;
 
+  // Expose Math to template
+  Math = Math;
+
   constructor(
     private empresasService: EmpresasService,
     private router: Router
@@ -47,7 +50,7 @@ export class EmpresasListComponent implements OnInit {
         this.totalPages = response.totalPages;
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         this.error = 'Erro ao carregar empresas: ' + (error.error?.detail || error.message);
         this.loading = false;
       }
@@ -79,7 +82,7 @@ export class EmpresasListComponent implements OnInit {
         next: () => {
           this.loadEmpresas();
         },
-        error: (error) => {
+        error: (error: any) => {
           this.error = 'Erro ao excluir empresa: ' + (error.error?.detail || error.message);
         }
       });

@@ -4,12 +4,12 @@ import sys
 import time
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from fastapi import FastAPI, HTTPException, Depends, status, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, Numeric, ForeignKey, Date
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, Text, Numeric, ForeignKey, Date, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from passlib.context import CryptContext
@@ -290,6 +290,9 @@ class Integracao(Base):
     app_key = Column(String(255))  # Chave da aplicação
     app_secret = Column(String(255))  # Segredo da aplicação
     token = Column(String(500))  # Token de acesso (se aplicável)
+    
+    # Configurações adicionais (JSON para flexibilidade)
+    configuracoes_extras = Column(JSON)  # Para configurações específicas de cada integração
     
     # Status e controle
     ativo = Column(Boolean, default=True)
@@ -693,6 +696,388 @@ async def create_conta_pagar(
     db.commit()
     db.refresh(db_conta)
     return db_conta
+
+# ==================== INTEGRACOES ROUTES ====================
+
+# Schemas para Integrações
+class IntegracaoCreate(BaseModel):
+    nome: str
+    tipo: str
+    descricao: Optional[str] = None
+    base_url: Optional[str] = None
+    app_key: Optional[str] = None
+    app_secret: Optional[str] = None
+    token: Optional[str] = None
+    configuracoes_extras: Optional[Dict[str, Any]] = None
+    ativo: bool = True
+
+class IntegracaoUpdate(BaseModel):
+    nome: Optional[str] = None
+    tipo: Optional[str] = None
+    descricao: Optional[str] = None
+    base_url: Optional[str] = None
+    app_key: Optional[str] = None
+    app_secret: Optional[str] = None
+    token: Optional[str] = None
+    configuracoes_extras: Optional[Dict[str, Any]] = None
+    ativo: Optional[bool] = None
+
+@app.get("/api/v1/integracoes")
+async def get_integracoes(
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = None,
+    tipo: Optional[str] = None,
+    ativo_apenas: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Integracao)
+    
+    if ativo_apenas:
+        query = query.filter(Integracao.ativo == True)
+    
+    if tipo:
+        query = query.filter(Integracao.tipo == tipo)
+    
+    if search:
+        query = query.filter(
+            (Integracao.nome.ilike(f"%{search}%")) |
+            (Integracao.descricao.ilike(f"%{search}%")) |
+            (Integracao.tipo.ilike(f"%{search}%"))
+        )
+    
+    total = query.count()
+    integracoes = query.offset(skip).limit(limit).all()
+    
+    # Converter para formato público (sem dados sensíveis)
+    items_public = []
+    for item in integracoes:
+        item_dict = {
+            "id": item.id,
+            "nome": item.nome,
+            "tipo": item.tipo,
+            "descricao": item.descricao,
+            "base_url": item.base_url,
+            "ativo": item.ativo,
+            "testado": item.testado,
+            "ultima_sincronizacao": item.ultima_sincronizacao.isoformat() if item.ultima_sincronizacao else None,
+            "created_at": item.created_at.isoformat(),
+            "updated_at": item.updated_at.isoformat() if item.updated_at else None
+        }
+        items_public.append(item_dict)
+    
+    return {
+        "items": items_public,
+        "total": total,
+        "page": (skip // limit) + 1,
+        "limit": limit,
+        "totalPages": (total + limit - 1) // limit
+    }
+
+@app.post("/api/v1/integracoes")
+async def create_integracao(
+    integracao: IntegracaoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Verificar se nome já existe
+    existing = db.query(Integracao).filter(Integracao.nome == integracao.nome).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Nome da integração já existe no sistema")
+    
+    db_integracao = Integracao(**integracao.dict())
+    db.add(db_integracao)
+    db.commit()
+    db.refresh(db_integracao)
+    
+    return {
+        "id": db_integracao.id,
+        "nome": db_integracao.nome,
+        "tipo": db_integracao.tipo,
+        "descricao": db_integracao.descricao,
+        "base_url": db_integracao.base_url,
+        "ativo": db_integracao.ativo,
+        "testado": db_integracao.testado,
+        "ultima_sincronizacao": db_integracao.ultima_sincronizacao.isoformat() if db_integracao.ultima_sincronizacao else None,
+        "created_at": db_integracao.created_at.isoformat(),
+        "updated_at": db_integracao.updated_at.isoformat() if db_integracao.updated_at else None
+    }
+
+@app.get("/api/v1/integracoes/{id}")
+async def get_integracao(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    integracao = db.query(Integracao).filter(Integracao.id == id).first()
+    if not integracao:
+        raise HTTPException(status_code=404, detail="Integração não encontrada")
+    
+    # Retornar dados completos apenas para superusuários
+    if current_user.is_superuser:
+        return {
+            "id": integracao.id,
+            "nome": integracao.nome,
+            "tipo": integracao.tipo,
+            "descricao": integracao.descricao,
+            "base_url": integracao.base_url,
+            "app_key": integracao.app_key,
+            "app_secret": integracao.app_secret,
+            "token": integracao.token,
+            "configuracoes_extras": integracao.configuracoes_extras,
+            "ativo": integracao.ativo,
+            "testado": integracao.testado,
+            "ultima_sincronizacao": integracao.ultima_sincronizacao.isoformat() if integracao.ultima_sincronizacao else None,
+            "created_at": integracao.created_at.isoformat(),
+            "updated_at": integracao.updated_at.isoformat() if integracao.updated_at else None
+        }
+    else:
+        return {
+            "id": integracao.id,
+            "nome": integracao.nome,
+            "tipo": integracao.tipo,
+            "descricao": integracao.descricao,
+            "base_url": integracao.base_url,
+            "ativo": integracao.ativo,
+            "testado": integracao.testado,
+            "ultima_sincronizacao": integracao.ultima_sincronizacao.isoformat() if integracao.ultima_sincronizacao else None,
+            "created_at": integracao.created_at.isoformat(),
+            "updated_at": integracao.updated_at.isoformat() if integracao.updated_at else None
+        }
+
+@app.put("/api/v1/integracoes/{id}")
+async def update_integracao(
+    id: int,
+    integracao: IntegracaoUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    db_integracao = db.query(Integracao).filter(Integracao.id == id).first()
+    if not db_integracao:
+        raise HTTPException(status_code=404, detail="Integração não encontrada")
+    
+    # Verificar se nome já existe em outra integração
+    if integracao.nome and integracao.nome != db_integracao.nome:
+        existing = db.query(Integracao).filter(Integracao.nome == integracao.nome).first()
+        if existing and existing.id != id:
+            raise HTTPException(status_code=400, detail="Nome da integração já existe em outra integração")
+    
+    for field, value in integracao.dict(exclude_unset=True).items():
+        setattr(db_integracao, field, value)
+    
+    db.commit()
+    db.refresh(db_integracao)
+    
+    return {
+        "id": db_integracao.id,
+        "nome": db_integracao.nome,
+        "tipo": db_integracao.tipo,
+        "descricao": db_integracao.descricao,
+        "base_url": db_integracao.base_url,
+        "ativo": db_integracao.ativo,
+        "testado": db_integracao.testado,
+        "ultima_sincronizacao": db_integracao.ultima_sincronizacao.isoformat() if db_integracao.ultima_sincronizacao else None,
+        "created_at": db_integracao.created_at.isoformat(),
+        "updated_at": db_integracao.updated_at.isoformat() if db_integracao.updated_at else None
+    }
+
+@app.delete("/api/v1/integracoes/{id}")
+async def delete_integracao(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    integracao = db.query(Integracao).filter(Integracao.id == id).first()
+    if not integracao:
+        raise HTTPException(status_code=404, detail="Integração não encontrada")
+    
+    db.delete(integracao)
+    db.commit()
+    return {"message": "Integração excluída com sucesso"}
+
+@app.get("/api/v1/integracoes/tipos/disponiveis")
+async def get_tipos_integracoes(
+    current_user: User = Depends(get_current_user)
+):
+    return {
+        "tipos": [
+            {"codigo": "ERP", "nome": "Sistema ERP", "descricao": "Sistemas de gestão empresarial"},
+            {"codigo": "CRM", "nome": "Sistema CRM", "descricao": "Sistemas de relacionamento com cliente"},
+            {"codigo": "Financeiro", "nome": "Sistema Financeiro", "descricao": "Sistemas de gestão financeira"},
+            {"codigo": "E-commerce", "nome": "E-commerce", "descricao": "Plataformas de comércio eletrônico"},
+            {"codigo": "Contabil", "nome": "Sistema Contábil", "descricao": "Sistemas de contabilidade"},
+        ]
+    }
+
+# ==================== EMPRESAS ROUTES ====================
+
+# Schemas para Empresas
+class EmpresaCreate(BaseModel):
+    codigo_cliente_omie: Optional[int] = None
+    codigo_cliente_integracao: Optional[str] = None
+    razao_social: str
+    nome_fantasia: Optional[str] = None
+    cnpj: Optional[str] = None
+    inscricao_estadual: Optional[str] = None
+    inscricao_municipal: Optional[str] = None
+    endereco: Optional[str] = None
+    endereco_numero: Optional[str] = None
+    bairro: Optional[str] = None
+    complemento: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    telefone1_ddd: Optional[str] = None
+    telefone1_numero: Optional[str] = None
+    telefone2_ddd: Optional[str] = None
+    telefone2_numero: Optional[str] = None
+    email: Optional[str] = None
+    homepage: Optional[str] = None
+    observacoes: Optional[str] = None
+    inativo: str = "N"
+    bloqueado: str = "N"
+
+class EmpresaUpdate(BaseModel):
+    codigo_cliente_omie: Optional[int] = None
+    codigo_cliente_integracao: Optional[str] = None
+    razao_social: Optional[str] = None
+    nome_fantasia: Optional[str] = None
+    cnpj: Optional[str] = None
+    inscricao_estadual: Optional[str] = None
+    inscricao_municipal: Optional[str] = None
+    endereco: Optional[str] = None
+    endereco_numero: Optional[str] = None
+    bairro: Optional[str] = None
+    complemento: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    cep: Optional[str] = None
+    telefone1_ddd: Optional[str] = None
+    telefone1_numero: Optional[str] = None
+    telefone2_ddd: Optional[str] = None
+    telefone2_numero: Optional[str] = None
+    email: Optional[str] = None
+    homepage: Optional[str] = None
+    observacoes: Optional[str] = None
+    inativo: Optional[str] = None
+    bloqueado: Optional[str] = None
+
+@app.get("/api/v1/empresas")
+async def get_empresas(
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = None,
+    ativo_apenas: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Empresa)
+    
+    if ativo_apenas:
+        query = query.filter(Empresa.inativo == "N")
+    
+    if search:
+        query = query.filter(
+            (Empresa.razao_social.ilike(f"%{search}%")) |
+            (Empresa.nome_fantasia.ilike(f"%{search}%")) |
+            (Empresa.cnpj.ilike(f"%{search}%"))
+        )
+    
+    total = query.count()
+    empresas = query.offset(skip).limit(limit).all()
+    
+    return {
+        "items": empresas,
+        "total": total,
+        "page": (skip // limit) + 1,
+        "limit": limit,
+        "totalPages": (total + limit - 1) // limit
+    }
+
+@app.post("/api/v1/empresas")
+async def create_empresa(
+    empresa: EmpresaCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Verificar se CNPJ já existe
+    if empresa.cnpj:
+        existing = db.query(Empresa).filter(Empresa.cnpj == empresa.cnpj).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="CNPJ já cadastrado no sistema")
+    
+    # Verificar se código de integração já existe
+    if empresa.codigo_cliente_integracao:
+        existing = db.query(Empresa).filter(Empresa.codigo_cliente_integracao == empresa.codigo_cliente_integracao).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Código de integração já cadastrado no sistema")
+    
+    db_empresa = Empresa(**empresa.dict())
+    db.add(db_empresa)
+    db.commit()
+    db.refresh(db_empresa)
+    return db_empresa
+
+@app.get("/api/v1/empresas/{id}")
+async def get_empresa(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    empresa = db.query(Empresa).filter(Empresa.id == id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    return empresa
+
+@app.put("/api/v1/empresas/{id}")
+async def update_empresa(
+    id: int,
+    empresa: EmpresaUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    db_empresa = db.query(Empresa).filter(Empresa.id == id).first()
+    if not db_empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    # Verificar se CNPJ já existe em outra empresa
+    if empresa.cnpj and empresa.cnpj != db_empresa.cnpj:
+        existing = db.query(Empresa).filter(Empresa.cnpj == empresa.cnpj).first()
+        if existing and existing.id != id:
+            raise HTTPException(status_code=400, detail="CNPJ já cadastrado em outra empresa")
+    
+    for field, value in empresa.dict(exclude_unset=True).items():
+        setattr(db_empresa, field, value)
+    
+    db.commit()
+    db.refresh(db_empresa)
+    return db_empresa
+
+@app.delete("/api/v1/empresas/{id}")
+async def delete_empresa(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    empresa = db.query(Empresa).filter(Empresa.id == id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+    
+    db.delete(empresa)
+    db.commit()
+    return {"message": "Empresa excluída com sucesso"}
+
+# ==================== INCLUDE ROUTERS ====================
+
+# Import and include API routers
+try:
+    from app.api.v1.api import api_router
+    app.include_router(api_router, prefix="/api/v1")
+    logger.info("✅ API routers incluídos com sucesso!")
+except ImportError as e:
+    logger.warning(f"⚠️ Não foi possível importar routers da API: {e}")
+    logger.info("📝 Usando rotas básicas do main.py")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

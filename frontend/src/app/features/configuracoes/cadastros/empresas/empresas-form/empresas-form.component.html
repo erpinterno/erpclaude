@@ -411,7 +411,7 @@
                 id="optante_simples_nacional"
                 class="form-check-input"
                 [checked]="empresaForm.get('optante_simples_nacional')?.value === 'S'"
-                (change)="empresaForm.patchValue({optante_simples_nacional: $event.target.checked ? 'S' : 'N'})">
+                (change)="onCheckboxChange('optante_simples_nacional', $event)">
               <label class="form-check-label" for="optante_simples_nacional">
                 Optante Simples Nacional
               </label>
@@ -450,7 +450,7 @@
               id="inativo"
               class="form-check-input"
               [checked]="empresaForm.get('inativo')?.value === 'S'"
-              (change)="empresaForm.patchValue({inativo: $event.target.checked ? 'S' : 'N'})">
+              (change)="onCheckboxChange('inativo', $event)">
             <label class="form-check-label" for="inativo">
               Empresa Inativa
             </label>
@@ -463,7 +463,7 @@
               id="bloqueado"
               class="form-check-input"
               [checked]="empresaForm.get('bloqueado')?.value === 'S'"
-              (change)="empresaForm.patchValue({bloqueado: $event.target.checked ? 'S' : 'N'})">
+              (change)="onCheckboxChange('bloqueado', $event)">
             <label class="form-check-label" for="bloqueado">
               Empresa Bloqueada
             </label>

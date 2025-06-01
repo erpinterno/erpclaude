@@ -120,6 +120,11 @@ export class MainLayoutComponent implements OnInit {
               label: 'Plano de Contas',
               icon: 'fas fa-list-alt',
               routerLink: '/configuracoes/cadastros/plano-contas'
+            },
+            {
+              label: 'Empresas',
+              icon: 'fas fa-building',
+              routerLink: '/configuracoes/cadastros/empresas'
             }
           ]
         },
@@ -127,6 +132,11 @@ export class MainLayoutComponent implements OnInit {
           label: 'Usuários',
           icon: 'fas fa-user-cog',
           routerLink: '/configuracoes/usuarios'
+        },
+        {
+          label: 'Integrações',
+          icon: 'fas fa-plug',
+          routerLink: '/configuracoes/integracoes'
         },
         {
           label: 'Empresa',

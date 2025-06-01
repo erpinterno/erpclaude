@@ -46,7 +46,7 @@ export class EmpresasFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params: any) => {
       if (params['id']) {
         this.isEditing = true;
         this.empresaId = +params['id'];
@@ -117,7 +117,7 @@ export class EmpresasFormComponent implements OnInit {
         this.empresaForm.patchValue(empresa);
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         this.error = 'Erro ao carregar empresa: ' + (error.error?.detail || error.message);
         this.loading = false;
       }
@@ -149,7 +149,7 @@ export class EmpresasFormComponent implements OnInit {
           this.router.navigate(['/configuracoes/cadastros/empresas']);
         }, 2000);
       },
-      error: (error) => {
+      error: (error: any) => {
         this.error = 'Erro ao salvar empresa: ' + (error.error?.detail || error.message);
         this.loading = false;
       }
@@ -209,5 +209,10 @@ export class EmpresasFormComponent implements OnInit {
       }
       this.empresaForm.patchValue({ [field]: value });
     }
+  }
+
+  onCheckboxChange(fieldName: string, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.empresaForm.patchValue({ [fieldName]: target.checked ? 'S' : 'N' });
   }
 }
