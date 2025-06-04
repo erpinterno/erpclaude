@@ -401,7 +401,7 @@ export class FormasPagamentoFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params: any) => {
       if (params['id']) {
         this.formaPagamentoId = +params['id'];
         this.isEditing = true;
@@ -410,7 +410,7 @@ export class FormasPagamentoFormComponent implements OnInit {
     });
 
     // Observar mudanças no tipo
-    this.formaPagamentoForm.get('tipo')?.valueChanges.subscribe(tipo => {
+    this.formaPagamentoForm.get('tipo')?.valueChanges.subscribe((tipo: any) => {
       this.tipoSelecionado = tipo;
     });
   }

@@ -1,6 +1,12 @@
 {
   "dependencies": {
+    "@angular/animations": "^20.0.0",
+    "@angular/cdk": "^20.0.1",
+    "@angular/common": "^20.0.0",
     "@angular/core": "^20.0.0",
+    "@angular/forms": "^20.0.0",
+    "@angular/material": "^20.0.1",
+    "@angular/router": "^20.0.0",
     "angular": "^1.8.3"
   }
 }

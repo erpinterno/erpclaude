@@ -353,7 +353,7 @@ export class BancosFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params: any) => {
       if (params['id']) {
         this.bancoId = +params['id'];
         this.isEditing = true;

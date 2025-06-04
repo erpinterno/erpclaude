@@ -686,7 +686,7 @@ export class ContaCorrenteComponent implements OnInit {
       data: { conta: null, isEditing: false }
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result: any) => {
       if (result) {
         this.loadContas();
         this.snackBar.open('Conta criada com sucesso!', 'OK', { duration: 3000 });
@@ -700,7 +700,7 @@ export class ContaCorrenteComponent implements OnInit {
       data: { conta: { ...conta }, isEditing: true }
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result: any) => {
       if (result) {
         this.loadContas();
         this.snackBar.open('Conta atualizada com sucesso!', 'OK', { duration: 3000 });

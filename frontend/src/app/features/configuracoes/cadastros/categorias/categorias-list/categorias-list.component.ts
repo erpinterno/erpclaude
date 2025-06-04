@@ -17,6 +17,9 @@ export class CategoriasListComponent implements OnInit {
   pageSize = 10;
   totalItems = 0;
 
+  // Expor Math para uso no template
+  Math = Math;
+
   // Opções para filtros
   tipoOptions = [
     { value: '', label: 'Todos os tipos' },
