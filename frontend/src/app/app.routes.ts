@@ -84,11 +84,106 @@ export const routes: Routes = [
         path: 'configuracoes',
         children: [
           {
+            path: '',
+            redirectTo: 'cadastros',
+            pathMatch: 'full'
+          },
+          {
             path: 'cadastros',
             children: [
               {
+                path: '',
+                redirectTo: 'fornecedores',
+                pathMatch: 'full'
+              },
+              {
+                path: 'fornecedores',
+                children: [
+                  {
+                    path: '',
+                    loadComponent: () => import('./features/configuracoes/cadastros/fornecedores/fornecedores-list/fornecedores-list.component').then(m => m.FornecedoresListComponent)
+                  },
+                  {
+                    path: 'novo',
+                    loadComponent: () => import('./features/configuracoes/cadastros/fornecedores/fornecedores-form/fornecedores-form.component').then(m => m.FornecedoresFormComponent)
+                  },
+                  {
+                    path: 'editar/:id',
+                    loadComponent: () => import('./features/configuracoes/cadastros/fornecedores/fornecedores-form/fornecedores-form.component').then(m => m.FornecedoresFormComponent)
+                  }
+                ]
+              },
+              {
+                path: 'bancos',
+                children: [
+                  {
+                    path: '',
+                    loadComponent: () => import('./features/configuracoes/cadastros/bancos/bancos-list/bancos-list.component').then(m => m.BancosListComponent)
+                  },
+                  {
+                    path: 'novo',
+                    loadComponent: () => import('./features/configuracoes/cadastros/bancos/bancos-form/bancos-form.component').then(m => m.BancosFormComponent)
+                  },
+                  {
+                    path: 'editar/:id',
+                    loadComponent: () => import('./features/configuracoes/cadastros/bancos/bancos-form/bancos-form.component').then(m => m.BancosFormComponent)
+                  }
+                ]
+              },
+              {
+                path: 'clientes',
+                children: [
+                  {
+                    path: '',
+                    loadComponent: () => import('./features/configuracoes/cadastros/clientes/clientes-list/clientes-list.component').then(m => m.ClientesListComponent)
+                  },
+                  {
+                    path: 'novo',
+                    loadComponent: () => import('./features/configuracoes/cadastros/clientes/clientes-form/clientes-form.component').then(m => m.ClientesFormComponent)
+                  },
+                  {
+                    path: 'editar/:id',
+                    loadComponent: () => import('./features/configuracoes/cadastros/clientes/clientes-form/clientes-form.component').then(m => m.ClientesFormComponent)
+                  }
+                ]
+              },
+              {
                 path: 'empresas',
-                loadChildren: () => import('./features/configuracoes/cadastros/empresas/empresas.module').then(m => m.EmpresasModule)
+                children: [
+                  {
+                    path: '',
+                    loadComponent: () => import('./features/configuracoes/cadastros/empresas/empresas-list/empresas-list.component').then(m => m.EmpresasListComponent)
+                  },
+                  {
+                    path: 'novo',
+                    loadComponent: () => import('./features/configuracoes/cadastros/empresas/empresas-form/empresas-form.component').then(m => m.EmpresasFormComponent)
+                  },
+                  {
+                    path: 'editar/:id',
+                    loadComponent: () => import('./features/configuracoes/cadastros/empresas/empresas-form/empresas-form.component').then(m => m.EmpresasFormComponent)
+                  }
+                ]
+              },
+              {
+                path: 'formas-pagamento',
+                children: [
+                  {
+                    path: '',
+                    loadComponent: () => import('./features/configuracoes/cadastros/formas-pagamento/formas-pagamento-list/formas-pagamento-list.component').then(m => m.FormasPagamentoListComponent)
+                  },
+                  {
+                    path: 'novo',
+                    loadComponent: () => import('./features/configuracoes/cadastros/formas-pagamento/formas-pagamento-form/formas-pagamento-form.component').then(m => m.FormasPagamentoFormComponent)
+                  },
+                  {
+                    path: 'editar/:id',
+                    loadComponent: () => import('./features/configuracoes/cadastros/formas-pagamento/formas-pagamento-form/formas-pagamento-form.component').then(m => m.FormasPagamentoFormComponent)
+                  }
+                ]
+              },
+              {
+                path: 'categorias',
+                loadChildren: () => import('./features/configuracoes/cadastros/categorias/categorias.module').then(m => m.CategoriasModule)
               }
             ]
           },
