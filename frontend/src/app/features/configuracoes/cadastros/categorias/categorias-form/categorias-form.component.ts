@@ -44,7 +44,7 @@ export class CategoriasFormComponent implements OnInit {
     }
 
     // Monitorar mudanças no tipo para atualizar categorias pai
-    this.form.get('tipo')?.valueChanges.subscribe(tipo => {
+    this.form.get('tipo')?.valueChanges.subscribe((tipo: string) => {
       this.loadCategoriasPai(tipo);
       // Limpar categoria pai selecionada quando mudar o tipo
       this.form.get('categoria_pai_id')?.setValue(null);
@@ -217,5 +217,15 @@ export class CategoriasFormComponent implements OnInit {
   getTipoInfo(): any {
     const tipoValue = this.form.get('tipo')?.value;
     return this.tipoOptions.find(option => option.value === tipoValue);
+  }
+
+  // Método para obter nome da categoria pai
+  getCategoriaPaiNome(): string {
+    const categoriaPaiId = this.form.get('categoria_pai_id')?.value;
+    if (!categoriaPaiId || !this.categoriasPai) {
+      return '';
+    }
+    const categoriaPai = this.categoriasPai.find(c => c.id === categoriaPaiId);
+    return categoriaPai?.nome || '';
   }
 }

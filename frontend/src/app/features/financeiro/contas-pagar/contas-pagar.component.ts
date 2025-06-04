@@ -17,6 +17,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ContaPagarFormDialogComponent } from './conta-pagar-form-dialog.component';
 
 interface ContaPagar {
   id: number;
@@ -235,15 +236,42 @@ export class ContasPagarComponent implements OnInit, AfterViewInit {
 
   // Métodos de ação
   openDialog(conta?: ContaPagar): void {
-    // TODO: Implementar dialog de criação/edição
-    if (conta) {
-      this.contaForm.patchValue(conta);
-    } else {
-      this.resetForm();
-    }
-    
-    this.snackBar.open('Funcionalidade em desenvolvimento', 'OK', {
-      duration: 3000
+    const dialogRef = this.dialog.open(ContaPagarFormDialogComponent, {
+      width: '800px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      disableClose: false,
+      data: { conta: conta }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        if (conta) {
+          // Edição - atualizar conta existente
+          const index = this.dataSource.data.findIndex(c => c.id === conta.id);
+          if (index !== -1) {
+            this.dataSource.data[index] = {
+              ...this.dataSource.data[index],
+              ...result,
+              valor: result.valor_original // Mapear valor_original para valor
+            };
+            this.dataSource.data = [...this.dataSource.data];
+          }
+        } else {
+          // Criação - adicionar nova conta
+          const novaConta: ContaPagar = {
+            id: Math.max(...this.dataSource.data.map(c => c.id)) + 1,
+            descricao: result.descricao,
+            fornecedor: result.fornecedor,
+            valor: result.valor_original,
+            data_vencimento: result.data_vencimento,
+            data_pagamento: result.data_pagamento,
+            status: result.status,
+            observacoes: result.observacoes
+          };
+          this.dataSource.data = [...this.dataSource.data, novaConta];
+        }
+      }
     });
   }
 

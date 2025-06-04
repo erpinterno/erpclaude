@@ -224,7 +224,7 @@
               <p *ngIf="form.value.categoria_pai_id" class="category-parent">
                 <i class="fas fa-level-up-alt"></i>
                 Subcategoria de: 
-                <strong>{{ (categoriasPai.find(c => c.id == form.value.categoria_pai_id))?.nome }}</strong>
+                <strong>{{ getCategoriaPaiNome() }}</strong>
               </p>
             </div>
           </div>
