@@ -4,8 +4,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.crud.base import CRUDBase
-from app.models.integracao import Integracao
-from app.schemas.integracao import IntegracaoCreate, IntegracaoUpdate
+from app.models.integracao import Integracao, IntegracaoLog, IntegracaoDocumentacao
+from app.schemas.integracao import (
+    IntegracaoCreate, IntegracaoUpdate, 
+    IntegracaoLogCreate, IntegracaoDocumentacaoCreate
+)
 
 class CRUDIntegracao(CRUDBase[Integracao, IntegracaoCreate, IntegracaoUpdate]):
     def get_by_nome(self, db: Session, *, nome: str) -> Optional[Integracao]:
@@ -149,4 +152,63 @@ class CRUDIntegracao(CRUDBase[Integracao, IntegracaoCreate, IntegracaoUpdate]):
         
         return config
 
+class CRUDIntegracaoLog(CRUDBase[IntegracaoLog, IntegracaoLogCreate, IntegracaoLogCreate]):
+    def get_by_integracao(self, db: Session, *, integracao_id: int) -> List[IntegracaoLog]:
+        return db.query(IntegracaoLog).filter(IntegracaoLog.integracao_id == integracao_id).all()
+    
+    def update_log_success(
+        self, 
+        db: Session, 
+        *, 
+        log_id: int,
+        tempo_execucao: int,
+        registros_processados: int = 0,
+        registros_importados: int = 0,
+        registros_atualizados: int = 0
+    ) -> Optional[IntegracaoLog]:
+        """Atualizar log com sucesso"""
+        log = db.query(IntegracaoLog).filter(IntegracaoLog.id == log_id).first()
+        if log:
+            from app.models.integracao import StatusExecucao
+            log.status = StatusExecucao.SUCCESS
+            log.tempo_execucao = tempo_execucao
+            log.registros_processados = registros_processados
+            log.registros_importados = registros_importados
+            log.registros_atualizados = registros_atualizados
+            log.mensagem = f"Execução concluída com sucesso: {registros_importados} importados, {registros_atualizados} atualizados"
+            db.commit()
+            db.refresh(log)
+        return log
+    
+    def update_log_error(
+        self, 
+        db: Session, 
+        *, 
+        log_id: int,
+        tempo_execucao: int,
+        mensagem: str
+    ) -> Optional[IntegracaoLog]:
+        """Atualizar log com erro"""
+        log = db.query(IntegracaoLog).filter(IntegracaoLog.id == log_id).first()
+        if log:
+            from app.models.integracao import StatusExecucao
+            log.status = StatusExecucao.ERROR
+            log.tempo_execucao = tempo_execucao
+            log.mensagem = mensagem
+            db.commit()
+            db.refresh(log)
+        return log
+
+class CRUDIntegracaoDocumentacao(CRUDBase[IntegracaoDocumentacao, IntegracaoDocumentacaoCreate, IntegracaoDocumentacaoCreate]):
+    def get_by_integracao(self, db: Session, *, integracao_id: int) -> List[IntegracaoDocumentacao]:
+        return db.query(IntegracaoDocumentacao).filter(IntegracaoDocumentacao.integracao_id == integracao_id).all()
+    
+    def get_by_nome_arquivo(self, db: Session, *, integracao_id: int, nome_arquivo: str) -> Optional[IntegracaoDocumentacao]:
+        return db.query(IntegracaoDocumentacao).filter(
+            IntegracaoDocumentacao.integracao_id == integracao_id,
+            IntegracaoDocumentacao.nome_arquivo == nome_arquivo
+        ).first()
+
 integracao = CRUDIntegracao(Integracao)
+integracao_log = CRUDIntegracaoLog(IntegracaoLog)
+integracao_documentacao = CRUDIntegracaoDocumentacao(IntegracaoDocumentacao)

@@ -5,4 +5,4 @@ from app.crud.crud_financeiro import (
     crud_anexo_cliente_fornecedor, crud_pagamento
 )
 from app.crud.crud_empresa import empresa
-from app.crud.crud_integracao import integracao
+from app.crud.crud_integracao import integracao, integracao_log, integracao_documentacao

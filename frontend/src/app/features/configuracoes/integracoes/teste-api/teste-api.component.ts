@@ -62,12 +62,13 @@ export class TesteApiComponent implements OnInit {
   loadIntegracoes(): void {
     this.loading = true;
     this.integracoesService.getIntegracoes(1, 100, undefined, undefined, true).subscribe({
-      next: (response) => {
-        this.integracoes = response.items;
+      next: (response: any) => {
+        this.integracoes = response.items || [];
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Erro ao carregar integrações:', error);
+        this.integracoes = [];
         this.loading = false;
       }
     });
@@ -88,7 +89,7 @@ export class TesteApiComponent implements OnInit {
         this.ultimoTeste = resultado;
         this.testando = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         this.ultimoTeste = {
           sucesso: false,
           mensagem: `Erro ao testar: ${error.error?.detail || error.message}`,
@@ -122,7 +123,7 @@ export class TesteApiComponent implements OnInit {
         this.ultimaSincronizacao = resultado;
         this.sincronizando = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         this.ultimaSincronizacao = {
           sucesso: false,
           total_processados: 0,
@@ -153,7 +154,7 @@ export class TesteApiComponent implements OnInit {
         this.loadIntegracoes(); // Recarregar lista
         alert('✅ Integração do Omie configurada com sucesso!');
       },
-      error: (error) => {
+      error: (error: any) => {
         this.configurandoOmie = false;
         alert(`❌ Erro ao configurar Omie: ${error.error?.detail || error.message}`);
       }

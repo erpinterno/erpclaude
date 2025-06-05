@@ -107,9 +107,11 @@
           <td>
             <span class="badge badge-info">{{ integracao.tipo }}</span>
           </td>
-          <td>{{ integracao.descricao || '-' }}</td>
           <td>
-            <small class="text-muted">{{ integracao.base_url || '-' }}</small>
+            <span [title]="integracao.descricao">{{ integracao.descricao || '-' }}</span>
+          </td>
+          <td>
+            <small class="text-muted" [title]="integracao.base_url">{{ integracao.base_url || '-' }}</small>
           </td>
           <td>
             <span class="badge" [ngClass]="getStatusClass(integracao)">

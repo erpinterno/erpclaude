@@ -24,7 +24,7 @@ export class IntegracoesListComponent implements OnInit {
   ativoApenas = false;
 
   // Tipos disponíveis
-  tipos: any[] = [];
+  tipos: { codigo: string; nome: string; descricao: string }[] = [];
 
   // Expose Math to template
   Math = Math;
@@ -42,10 +42,11 @@ export class IntegracoesListComponent implements OnInit {
   loadTipos(): void {
     this.integracoesService.getTiposDisponiveis().subscribe({
       next: (response: any) => {
-        this.tipos = response.tipos;
+        this.tipos = response.tipos || [];
       },
       error: (error: any) => {
         console.error('Erro ao carregar tipos:', error);
+        this.tipos = [];
       }
     });
   }

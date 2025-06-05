@@ -2,6 +2,9 @@
   <div class="header">
     <h2>{{ isEditing ? 'Editar Integração' : 'Nova Integração' }}</h2>
     <div class="header-actions">
+      <button type="button" class="btn btn-outline-info" (click)="carregarTemplateOmie()">
+        <i class="fas fa-download"></i> Template Omie
+      </button>
       <button type="button" class="btn btn-secondary" (click)="onCancel()">
         <i class="fas fa-times"></i> Cancelar
       </button>
@@ -24,212 +27,577 @@
   </div>
 
   <!-- Error -->
-  <div *ngIf="error" class="alert alert-danger">
+  <div *ngIf="error" class="alert alert-danger alert-dismissible">
     {{ error }}
+    <button type="button" class="close" (click)="error = null">
+      <span>&times;</span>
+    </button>
   </div>
 
   <!-- Success -->
-  <div *ngIf="success" class="alert alert-success">
+  <div *ngIf="success" class="alert alert-success alert-dismissible">
     {{ success }}
+    <button type="button" class="close" (click)="success = null">
+      <span>&times;</span>
+    </button>
+  </div>
+
+  <!-- Navegação por Abas -->
+  <div class="nav-tabs-container" *ngIf="!loading || !isEditing">
+    <ul class="nav nav-tabs">
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="activeTab === 'basico'" (click)="setActiveTab('basico')">
+          <i class="fas fa-info-circle"></i> Básico
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="activeTab === 'configuracao'" (click)="setActiveTab('configuracao')">
+          <i class="fas fa-cog"></i> Configuração
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="activeTab === 'estrutura'" (click)="setActiveTab('estrutura')">
+          <i class="fas fa-code"></i> Estrutura
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="activeTab === 'execucao'" (click)="setActiveTab('execucao')">
+          <i class="fas fa-clock"></i> Execução
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="activeTab === 'autenticacao'" (click)="setActiveTab('autenticacao')">
+          <i class="fas fa-key"></i> Autenticação
+        </a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" [class.active]="activeTab === 'documentacao'" (click)="setActiveTab('documentacao')">
+          <i class="fas fa-file-alt"></i> Documentação
+        </a>
+      </li>
+    </ul>
   </div>
 
   <!-- Formulário -->
   <form [formGroup]="integracaoForm" (ngSubmit)="onSubmit()" *ngIf="!loading || !isEditing">
     
-    <!-- Informações Básicas -->
-    <div class="form-section">
-      <h4>Informações Básicas</h4>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="form-group">
-            <label for="nome">Nome da Integração *</label>
-            <input 
-              type="text" 
-              id="nome"
-              class="form-control"
-              formControlName="nome"
-              [class.is-invalid]="isFieldInvalid('nome')"
-              placeholder="Digite o nome da integração">
-            <div *ngIf="isFieldInvalid('nome')" class="invalid-feedback">
-              {{ getFieldError('nome') }}
+    <!-- Aba: Informações Básicas -->
+    <div class="tab-content" *ngIf="activeTab === 'basico'">
+      <div class="form-section">
+        <h4>Informações Básicas</h4>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="nome">Nome da Integração *</label>
+              <input 
+                type="text" 
+                id="nome"
+                class="form-control"
+                formControlName="nome"
+                [class.is-invalid]="isFieldInvalid('nome')"
+                placeholder="Digite o nome da integração">
+              <div *ngIf="isFieldInvalid('nome')" class="invalid-feedback">
+                {{ getFieldError('nome') }}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="tipo">Tipo de Integração *</label>
+              <select 
+                id="tipo"
+                class="form-control"
+                formControlName="tipo"
+                (change)="onTipoChange()"
+                [class.is-invalid]="isFieldInvalid('tipo')">
+                <option value="">Selecione o tipo</option>
+                <option *ngFor="let tipo of tiposDisponiveis" [value]="tipo.codigo">
+                  {{ tipo.nome }}
+                </option>
+              </select>
+              <div *ngIf="isFieldInvalid('tipo')" class="invalid-feedback">
+                {{ getFieldError('tipo') }}
+              </div>
+              <small *ngIf="integracaoForm.get('tipo')?.value" class="form-text text-muted">
+                {{ getTipoDescricao(integracaoForm.get('tipo')?.value) }}
+              </small>
             </div>
           </div>
         </div>
-        <div class="col-md-6">
-          <div class="form-group">
-            <label for="tipo">Tipo de Integração *</label>
-            <select 
-              id="tipo"
-              class="form-control"
-              formControlName="tipo"
-              (change)="onTipoChange()"
-              [class.is-invalid]="isFieldInvalid('tipo')">
-              <option value="">Selecione o tipo</option>
-              <option *ngFor="let tipo of tiposDisponiveis" [value]="tipo.codigo">
-                {{ tipo.nome }}
-              </option>
-            </select>
-            <div *ngIf="isFieldInvalid('tipo')" class="invalid-feedback">
-              {{ getFieldError('tipo') }}
+
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group">
+              <label for="descricao">Descrição</label>
+              <textarea 
+                id="descricao"
+                class="form-control"
+                formControlName="descricao"
+                rows="3"
+                [class.is-invalid]="isFieldInvalid('descricao')"
+                placeholder="Descreva o propósito desta integração..."></textarea>
+              <div *ngIf="isFieldInvalid('descricao')" class="invalid-feedback">
+                {{ getFieldError('descricao') }}
+              </div>
             </div>
-            <small *ngIf="integracaoForm.get('tipo')?.value" class="form-text text-muted">
-              {{ getTipoDescricao(integracaoForm.get('tipo')?.value) }}
-            </small>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="tipo_requisicao">Tipo de Requisição *</label>
+              <select 
+                id="tipo_requisicao"
+                class="form-control"
+                formControlName="tipo_requisicao"
+                (change)="onTipoRequisicaoChange()"
+                [class.is-invalid]="isFieldInvalid('tipo_requisicao')">
+                <option value="">Selecione o tipo</option>
+                <option *ngFor="let tipo of tiposRequisicao" [value]="tipo.codigo">
+                  {{ tipo.nome }} - {{ tipo.descricao }}
+                </option>
+              </select>
+              <div *ngIf="isFieldInvalid('tipo_requisicao')" class="invalid-feedback">
+                {{ getFieldError('tipo_requisicao') }}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="tipo_importacao">Tipo de Importação *</label>
+              <select 
+                id="tipo_importacao"
+                class="form-control"
+                formControlName="tipo_importacao"
+                [class.is-invalid]="isFieldInvalid('tipo_importacao')">
+                <option value="">Selecione o tipo</option>
+                <option *ngFor="let tipo of tiposImportacao" [value]="tipo.codigo">
+                  {{ tipo.nome }} - {{ tipo.descricao }}
+                </option>
+              </select>
+              <div *ngIf="isFieldInvalid('tipo_importacao')" class="invalid-feedback">
+                {{ getFieldError('tipo_importacao') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-check">
+              <input 
+                type="checkbox" 
+                id="ativo"
+                class="form-check-input"
+                formControlName="ativo">
+              <label class="form-check-label" for="ativo">
+                Integração Ativa
+              </label>
+              <small class="form-text text-muted d-block">
+                Apenas integrações ativas podem ser executadas
+              </small>
+            </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="row">
-        <div class="col-md-12">
-          <div class="form-group">
-            <label for="descricao">Descrição</label>
-            <textarea 
-              id="descricao"
-              class="form-control"
-              formControlName="descricao"
-              rows="3"
-              [class.is-invalid]="isFieldInvalid('descricao')"
-              placeholder="Descreva o propósito desta integração..."></textarea>
-            <div *ngIf="isFieldInvalid('descricao')" class="invalid-feedback">
-              {{ getFieldError('descricao') }}
+    <!-- Aba: Configuração da API -->
+    <div class="tab-content" *ngIf="activeTab === 'configuracao'">
+      <div class="form-section">
+        <h4>Configuração da API</h4>
+        <div class="row">
+          <div class="col-md-8">
+            <div class="form-group">
+              <label for="base_url">URL Base da API</label>
+              <input 
+                type="url" 
+                id="base_url"
+                class="form-control"
+                formControlName="base_url"
+                [class.is-invalid]="isFieldInvalid('base_url')"
+                placeholder="https://api.exemplo.com/v1/">
+              <div *ngIf="isFieldInvalid('base_url')" class="invalid-feedback">
+                {{ getFieldError('base_url') }}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label for="metodo_integracao">Método da Integração</label>
+              <input 
+                type="text" 
+                id="metodo_integracao"
+                class="form-control"
+                formControlName="metodo_integracao"
+                [class.is-invalid]="isFieldInvalid('metodo_integracao')"
+                placeholder="ListarClientes">
+              <div *ngIf="isFieldInvalid('metodo_integracao')" class="invalid-feedback">
+                {{ getFieldError('metodo_integracao') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group">
+              <label for="link_integracao">Link da Integração (URL + Método)</label>
+              <input 
+                type="text" 
+                id="link_integracao"
+                class="form-control"
+                [value]="previewLinkIntegracao()"
+                readonly
+                placeholder="Será gerado automaticamente">
+              <small class="form-text text-muted">
+                Este campo é gerado automaticamente baseado na URL base e método
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="tabela_destino">Tabela de Destino</label>
+              <select 
+                id="tabela_destino"
+                class="form-control"
+                formControlName="tabela_destino"
+                [class.is-invalid]="isFieldInvalid('tabela_destino')">
+                <option value="">Selecione a tabela</option>
+                <option *ngFor="let tabela of tabelasDisponiveis" [value]="tabela.nome">
+                  {{ tabela.nome }} - {{ tabela.descricao }}
+                </option>
+              </select>
+              <div *ngIf="isFieldInvalid('tabela_destino')" class="invalid-feedback">
+                {{ getFieldError('tabela_destino') }}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="tela_origem">Tela de Origem</label>
+              <input 
+                type="text" 
+                id="tela_origem"
+                class="form-control"
+                formControlName="tela_origem"
+                [class.is-invalid]="isFieldInvalid('tela_origem')"
+                placeholder="Nome da tela ou módulo de origem">
+              <div *ngIf="isFieldInvalid('tela_origem')" class="invalid-feedback">
+                {{ getFieldError('tela_origem') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Consulta SQL (apenas para POST) -->
+        <div class="row" *ngIf="integracaoForm.get('tipo_requisicao')?.value === 'POST'">
+          <div class="col-md-12">
+            <div class="form-group">
+              <label for="consulta_sql">
+                Consulta SQL *
+                <button 
+                  type="button" 
+                  class="btn btn-sm btn-outline-primary ml-2"
+                  (click)="validarSQL()"
+                  [disabled]="loading">
+                  <i class="fas fa-check"></i> Validar SQL
+                </button>
+              </label>
+              <textarea 
+                id="consulta_sql"
+                class="form-control code-editor"
+                formControlName="consulta_sql"
+                rows="6"
+                [class.is-invalid]="isFieldInvalid('consulta_sql')"
+                placeholder="SELECT * FROM tabela WHERE condicao = 'valor'"></textarea>
+              <div *ngIf="isFieldInvalid('consulta_sql')" class="invalid-feedback">
+                {{ getFieldError('consulta_sql') }}
+              </div>
+              <small class="form-text text-muted">
+                Consulta SQL para buscar os dados que serão enviados via POST
+              </small>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Configuração da API -->
-    <div class="form-section">
-      <h4>Configuração da API</h4>
-      <div class="row">
-        <div class="col-md-12">
-          <div class="form-group">
-            <label for="base_url">URL Base da API</label>
-            <input 
-              type="url" 
-              id="base_url"
-              class="form-control"
-              formControlName="base_url"
-              [class.is-invalid]="isFieldInvalid('base_url')"
-              placeholder="https://api.exemplo.com/v1/">
-            <div *ngIf="isFieldInvalid('base_url')" class="invalid-feedback">
-              {{ getFieldError('base_url') }}
+    <!-- Aba: Estrutura de Dados -->
+    <div class="tab-content" *ngIf="activeTab === 'estrutura'">
+      <div class="form-section">
+        <h4>Estrutura de Dados</h4>
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group">
+              <label for="estrutura_dados">
+                Estrutura de Dados (JSON)
+                <button 
+                  type="button" 
+                  class="btn btn-sm btn-outline-secondary ml-2"
+                  (click)="formatJson('estrutura_dados')"
+                  title="Formatar JSON">
+                  <i class="fas fa-code"></i>
+                </button>
+              </label>
+              <textarea 
+                id="estrutura_dados"
+                class="form-control code-editor"
+                formControlName="estrutura_dados"
+                rows="10"
+                placeholder='&#123;
+  "call": "ListarClientes",
+  "param": [&#123;
+    "pagina": 1,
+    "registros_por_pagina": 50
+  &#125;],
+  "app_key": "{{APP_KEY}}",
+  "app_secret": "{{APP_SECRET}}"
+&#125;'></textarea>
+              <small class="form-text text-muted">
+                Estrutura JSON dos dados que serão enviados para a API
+              </small>
             </div>
-            <small class="form-text text-muted">
-              URL base para todas as chamadas da API
-            </small>
           </div>
         </div>
-      </div>
 
-      <div class="row">
-        <div class="col-md-6">
-          <div class="form-group">
-            <label for="app_key">APP Key / Client ID</label>
-            <input 
-              type="text" 
-              id="app_key"
-              class="form-control"
-              formControlName="app_key"
-              [class.is-invalid]="isFieldInvalid('app_key')"
-              placeholder="Digite a chave da aplicação">
-            <div *ngIf="isFieldInvalid('app_key')" class="invalid-feedback">
-              {{ getFieldError('app_key') }}
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group">
+              <label for="formato_exemplo">Formato de Exemplo de Resposta</label>
+              <textarea 
+                id="formato_exemplo"
+                class="form-control code-editor"
+                formControlName="formato_exemplo"
+                rows="15"
+                placeholder='&#123;
+  "pagina": 1,
+  "total_de_paginas": 1,
+  "registros": 2,
+  "total_de_registros": 2,
+  "clientes_cadastro_resumido": [
+    &#123;
+      "codigo_cliente": 123456,
+      "razao_social": "Empresa Exemplo Ltda",
+      "cnpj_cpf": "12.345.678/0001-90"
+    &#125;
+  ]
+&#125;'></textarea>
+              <small class="form-text text-muted">
+                Exemplo do formato de resposta esperado da API
+              </small>
             </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="form-group">
-            <label for="app_secret">APP Secret / Client Secret</label>
-            <input 
-              type="password" 
-              id="app_secret"
-              class="form-control"
-              formControlName="app_secret"
-              [class.is-invalid]="isFieldInvalid('app_secret')"
-              placeholder="Digite o secret da aplicação">
-            <div *ngIf="isFieldInvalid('app_secret')" class="invalid-feedback">
-              {{ getFieldError('app_secret') }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <div class="col-md-12">
-          <div class="form-group">
-            <label for="token">Token de Acesso</label>
-            <textarea 
-              id="token"
-              class="form-control"
-              formControlName="token"
-              rows="3"
-              [class.is-invalid]="isFieldInvalid('token')"
-              placeholder="Cole aqui o token de acesso (se aplicável)"></textarea>
-            <div *ngIf="isFieldInvalid('token')" class="invalid-feedback">
-              {{ getFieldError('token') }}
-            </div>
-            <small class="form-text text-muted">
-              Token de autenticação para APIs que usam Bearer Token
-            </small>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Configurações Avançadas -->
-    <div class="form-section">
-      <h4>Configurações Avançadas</h4>
-      <div class="row">
-        <div class="col-md-12">
-          <div class="form-group">
-            <label for="configuracoes_extras">
-              Configurações Extras (JSON)
-              <button 
-                type="button" 
-                class="btn btn-sm btn-outline-secondary ml-2"
-                (click)="formatJson()"
-                title="Formatar JSON">
-                <i class="fas fa-code"></i>
-              </button>
-            </label>
-            <textarea 
-              id="configuracoes_extras"
-              class="form-control code-editor"
-              formControlName="configuracoes_extras"
-              rows="8"
-              placeholder='&#123;
+    <!-- Aba: Configuração de Execução -->
+    <div class="tab-content" *ngIf="activeTab === 'execucao'">
+      <div class="form-section">
+        <h4>Configuração de Execução</h4>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="intervalo_execucao">
+                Intervalo de Execução (minutos)
+                <button 
+                  type="button" 
+                  class="btn btn-sm btn-outline-info ml-2"
+                  (click)="gerarCronExpression()"
+                  title="Gerar expressão CRON">
+                  <i class="fas fa-magic"></i>
+                </button>
+              </label>
+              <input 
+                type="number" 
+                id="intervalo_execucao"
+                class="form-control"
+                formControlName="intervalo_execucao"
+                [class.is-invalid]="isFieldInvalid('intervalo_execucao')"
+                placeholder="60"
+                min="1">
+              <div *ngIf="isFieldInvalid('intervalo_execucao')" class="invalid-feedback">
+                {{ getFieldError('intervalo_execucao') }}
+              </div>
+              <small class="form-text text-muted">
+                Intervalo em minutos para execução automática
+              </small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="cron_expression">Expressão CRON</label>
+              <input 
+                type="text" 
+                id="cron_expression"
+                class="form-control"
+                formControlName="cron_expression"
+                [class.is-invalid]="isFieldInvalid('cron_expression')"
+                placeholder="0 * * * *">
+              <div *ngIf="isFieldInvalid('cron_expression')" class="invalid-feedback">
+                {{ getFieldError('cron_expression') }}
+              </div>
+              <small class="form-text text-muted">
+                Expressão CRON para agendamento avançado
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group">
+              <label for="configuracoes_extras">
+                Configurações Extras (JSON)
+                <button 
+                  type="button" 
+                  class="btn btn-sm btn-outline-secondary ml-2"
+                  (click)="formatJson('configuracoes_extras')"
+                  title="Formatar JSON">
+                  <i class="fas fa-code"></i>
+                </button>
+              </label>
+              <textarea 
+                id="configuracoes_extras"
+                class="form-control code-editor"
+                formControlName="configuracoes_extras"
+                rows="8"
+                placeholder='&#123;
   "timeout": 30,
   "retry_attempts": 3,
   "custom_headers": &#123;
     "User-Agent": "MeuERP/1.0"
   &#125;
 &#125;'></textarea>
-            <small class="form-text text-muted">
-              Configurações adicionais em formato JSON (opcional)
-            </small>
+              <small class="form-text text-muted">
+                Configurações adicionais em formato JSON (opcional)
+              </small>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Status -->
-    <div class="form-section">
-      <h4>Status</h4>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="form-check">
-            <input 
-              type="checkbox" 
-              id="ativo"
-              class="form-check-input"
-              formControlName="ativo">
-            <label class="form-check-label" for="ativo">
-              Integração Ativa
-            </label>
-            <small class="form-text text-muted d-block">
-              Apenas integrações ativas podem ser utilizadas
-            </small>
+    <!-- Aba: Autenticação -->
+    <div class="tab-content" *ngIf="activeTab === 'autenticacao'">
+      <div class="form-section">
+        <h4>Dados de Autenticação</h4>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="app_key">APP Key / Client ID</label>
+              <input 
+                type="text" 
+                id="app_key"
+                class="form-control"
+                formControlName="app_key"
+                [class.is-invalid]="isFieldInvalid('app_key')"
+                placeholder="Digite a chave da aplicação">
+              <div *ngIf="isFieldInvalid('app_key')" class="invalid-feedback">
+                {{ getFieldError('app_key') }}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label for="app_secret">APP Secret / Client Secret</label>
+              <input 
+                type="password" 
+                id="app_secret"
+                class="form-control"
+                formControlName="app_secret"
+                [class.is-invalid]="isFieldInvalid('app_secret')"
+                placeholder="Digite o secret da aplicação">
+              <div *ngIf="isFieldInvalid('app_secret')" class="invalid-feedback">
+                {{ getFieldError('app_secret') }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group">
+              <label for="token">Token de Acesso</label>
+              <textarea 
+                id="token"
+                class="form-control"
+                formControlName="token"
+                rows="3"
+                [class.is-invalid]="isFieldInvalid('token')"
+                placeholder="Cole aqui o token de acesso (se aplicável)"></textarea>
+              <div *ngIf="isFieldInvalid('token')" class="invalid-feedback">
+                {{ getFieldError('token') }}
+              </div>
+              <small class="form-text text-muted">
+                Token de autenticação para APIs que usam Bearer Token
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aba: Documentação -->
+    <div class="tab-content" *ngIf="activeTab === 'documentacao'">
+      <div class="form-section">
+        <h4>Documentação e Links</h4>
+        <div class="row">
+          <div class="col-md-12">
+            <div class="form-group">
+              <label for="link_documentacao">Link da Documentação</label>
+              <input 
+                type="url" 
+                id="link_documentacao"
+                class="form-control"
+                formControlName="link_documentacao"
+                [class.is-invalid]="isFieldInvalid('link_documentacao')"
+                placeholder="https://developer.exemplo.com/docs">
+              <div *ngIf="isFieldInvalid('link_documentacao')" class="invalid-feedback">
+                {{ getFieldError('link_documentacao') }}
+              </div>
+              <small class="form-text text-muted">
+                Link para a documentação oficial da API
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Importar Documentação -->
+        <div class="row" *ngIf="isEditing && integracaoId">
+          <div class="col-md-12">
+            <div class="card">
+              <div class="card-header">
+                <h5><i class="fas fa-upload"></i> Importar Documentação</h5>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label for="doc_file">Arquivo de Documentação (PHP/HTML/JSON)</label>
+                  <input 
+                    type="file" 
+                    id="doc_file"
+                    class="form-control-file"
+                    (change)="onFileSelected($event)"
+                    accept=".php,.html,.json,.txt">
+                  <small class="form-text text-muted">
+                    Selecione um arquivo como o ClientesCadastroJsonClient.php para preencher automaticamente os campos
+                  </small>
+                </div>
+                <button 
+                  type="button" 
+                  class="btn btn-info"
+                  (click)="importarDocumentacao()"
+                  [disabled]="!docFile || uploadingDoc">
+                  <i class="fas fa-magic"></i>
+                  {{ uploadingDoc ? 'Importando...' : 'Importar e Preencher Campos' }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -244,22 +612,28 @@
     </div>
     <div class="card-body">
       <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <h6><i class="fas fa-key text-primary"></i> Credenciais</h6>
           <p class="small">
             Mantenha suas chaves de API seguras. Nunca compartilhe APP_SECRET ou tokens de acesso.
           </p>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
           <h6><i class="fas fa-plug text-success"></i> Teste</h6>
           <p class="small">
             Após salvar, use a tela de "Teste de APIs" para verificar se a conexão está funcionando.
           </p>
         </div>
-        <div class="col-md-4">
-          <h6><i class="fas fa-cog text-warning"></i> Configurações</h6>
+        <div class="col-md-3">
+          <h6><i class="fas fa-clock text-warning"></i> Execução</h6>
           <p class="small">
-            Use as configurações extras para personalizar timeouts, headers e outros parâmetros.
+            Configure intervalos adequados para não sobrecarregar a API externa. Use expressões CRON para controle avançado.
+          </p>
+        </div>
+        <div class="col-md-3">
+          <h6><i class="fas fa-file-import text-info"></i> Importação</h6>
+          <p class="small">
+            Use a importação de documentação para preencher automaticamente os campos baseado em arquivos como o ClientesCadastroJsonClient.php.
           </p>
         </div>
       </div>
