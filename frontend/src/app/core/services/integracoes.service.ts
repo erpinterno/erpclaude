@@ -117,6 +117,14 @@ export interface TabelaDisponivel {
   nome: string;
   descricao: string;
   campos: string[];
+  campos_detalhados?: Array<{
+    nome: string;
+    tipo: string;
+    nullable: boolean;
+    default?: string;
+    comentario?: string;
+    chave?: string;
+  }>;
 }
 
 export interface ValidarSQLRequest {

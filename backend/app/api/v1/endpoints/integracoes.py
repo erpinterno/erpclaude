@@ -3,6 +3,7 @@ import httpx
 import asyncio
 import re
 import json
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -22,7 +23,9 @@ from app.schemas.integracao import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
+@router.get("", response_model=dict)
 @router.get("/", response_model=dict)
 def read_integracoes(
     db: Session = Depends(deps.get_db),
@@ -64,20 +67,35 @@ def create_integracao(
     """
     Create new integracao.
     """
-    # Verificar se nome já existe
-    integracao = crud.integracao.get_by_nome(db, nome=integracao_in.nome)
-    if integracao:
+    try:
+        # Log para debug
+        logger.info(f"Usuário {current_user.email} criando nova integração: {integracao_in.nome}")
+        
+        # Verificar se nome já existe
+        integracao = crud.integracao.get_by_nome(db, nome=integracao_in.nome)
+        if integracao:
+            raise HTTPException(
+                status_code=400,
+                detail="Nome da integração já existe no sistema"
+            )
+        
+        # Gerar link da integração automaticamente
+        if integracao_in.base_url and integracao_in.metodo_integracao:
+            integracao_in.link_integracao = f"{integracao_in.base_url.rstrip('/')}/{integracao_in.metodo_integracao}"
+        
+        integracao = crud.integracao.create(db=db, obj_in=integracao_in)
+        logger.info(f"Integração criada com sucesso: ID {integracao.id}")
+        
+        return IntegracaoPublic.from_orm(integracao)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao criar integração: {str(e)}")
         raise HTTPException(
-            status_code=400,
-            detail="Nome da integração já existe no sistema"
+            status_code=500,
+            detail=f"Erro interno ao criar integração: {str(e)}"
         )
-    
-    # Gerar link da integração automaticamente
-    if integracao_in.base_url and integracao_in.metodo_integracao:
-        integracao_in.link_integracao = f"{integracao_in.base_url.rstrip('/')}/{integracao_in.metodo_integracao}"
-    
-    integracao = crud.integracao.create(db=db, obj_in=integracao_in)
-    return IntegracaoPublic.from_orm(integracao)
 
 @router.put("/{id}", response_model=IntegracaoPublic)
 def update_integracao(
@@ -515,6 +533,7 @@ def validar_sql(
         )
 
 @router.get("/tipos/disponiveis")
+@router.get("/tipos/disponiveis/")
 def get_tipos_integracoes(
     current_user: models.User = Depends(deps.get_current_active_user),
 ) -> Any:

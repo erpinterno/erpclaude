@@ -11,10 +11,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 # Add the app directory to Python path
-sys.path.append('/app')
+sys.path.append('/workspaces/erpclaude/backend')
 
-# Import models from the main.py file
-from main import Base, User, Empresa, Integracao, get_password_hash
+# Import models and utils from the correct locations
+from app.models.user import User
+from app.models.empresa import Empresa
+from app.models.integracao import Integracao
+from app.core.security import get_password_hash
+from app.db.session import Base, SessionLocal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,21 +27,20 @@ logger = logging.getLogger(__name__)
 def init_database():
     """Initialize database with tables and default data"""
     
-    # Get database URL from environment
-    database_url = os.getenv("DATABASE_URL", "postgresql://erp_user:erp_password@postgres:5432/erp_db")
+    # Get database URL from environment - usar SQLite por padrão
+    database_url = os.getenv("DATABASE_URL", "sqlite:///./erp_database.db")
     logger.info(f"🔗 Connecting to database: {database_url}")
     
     try:
         # Create engine
-        engine = create_engine(database_url, echo=True)
+        engine = create_engine(database_url, echo=False)
         
         # Create all tables
         logger.info("🗃️ Creating database tables...")
         Base.metadata.create_all(bind=engine)
         logger.info("✅ Database tables created successfully!")
         
-        # Create session
-        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        # Use the existing SessionLocal
         db = SessionLocal()
         
         try:
@@ -50,7 +53,7 @@ def init_database():
             
             # Create default users
             users_to_create = [
-                ("admin@example.com", "Administrador do Sistema", "changethis", True),
+                ("admin@example.com", "Administrador do Sistema", "admin123", True),
                 ("financeiro@example.com", "Elon Alb", "fin123", False),
                 ("user@example.com", "Maria Silva", "user123", False),
             ]

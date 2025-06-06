@@ -24,6 +24,7 @@ export class AuthInterceptor implements HttpInterceptor {
     
     // Se for uma URL pública, não adiciona o token
     if (isPublicUrl) {
+      console.log('URL pública, não adicionando token:', req.url);
       return next.handle(req).pipe(
         catchError(this.handleError.bind(this))
       );
@@ -31,14 +32,34 @@ export class AuthInterceptor implements HttpInterceptor {
 
     // Adiciona o token de autorização se existir
     const token = this.authService.getToken();
+    const isAuthenticated = this.authService.isAuthenticated();
+    
+    console.log('🔐 [Auth Interceptor] URL:', req.url);
+    console.log('🔐 [Auth Interceptor] Token exists:', !!token);
+    console.log('🔐 [Auth Interceptor] Is authenticated:', isAuthenticated);
+    console.log('🔐 [Auth Interceptor] Token (first 30 chars):', token ? token.substring(0, 30) + '...' : 'null');
     
     let authReq = req;
-    if (token) {
+    if (token && isAuthenticated) {
+      console.log('✅ [Auth Interceptor] Adicionando token à requisição:', req.url);
       authReq = req.clone({
         setHeaders: {
           Authorization: `Bearer ${token}`
         }
       });
+    } else {
+      console.warn('❌ [Auth Interceptor] Token não encontrado ou inválido para:', req.url);
+      console.warn('❌ [Auth Interceptor] Token:', !!token, 'Authenticated:', isAuthenticated);
+      // Para URLs que precisam de autenticação, redirecionar para login
+      if (!isPublicUrl) {
+        console.error('💥 [Auth Interceptor] Fazendo logout devido a token inválido');
+        this.authService.logout();
+        return throwError(() => new HttpErrorResponse({
+          status: 401,
+          statusText: 'Unauthorized',
+          error: { detail: 'Token de autorização necessário' }
+        }));
+      }
     }
 
     return next.handle(authReq).pipe(

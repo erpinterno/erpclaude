@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, Params } from '@angular/router';
 import { IntegracoesService, Integracao, TipoIntegracao, TabelaDisponivel } from '../../../../core/services/integracoes.service';
 
 @Component({
@@ -46,7 +46,7 @@ export class IntegracoesFormComponent implements OnInit {
     this.loadTipos();
     this.loadTabelas();
     
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params: Params) => {
       if (params['id']) {
         this.isEditing = true;
         this.integracaoId = +params['id'];
@@ -109,9 +109,32 @@ export class IntegracoesFormComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Erro ao carregar tipos:', error);
-        this.tiposDisponiveis = [];
-        this.tiposRequisicao = [];
-        this.tiposImportacao = [];
+        // Valores fixos como fallback
+        this.tiposDisponiveis = [
+          { codigo: 'ERP', nome: 'Sistema ERP', descricao: 'Sistemas de gestão empresarial' },
+          { codigo: 'CRM', nome: 'Sistema CRM', descricao: 'Sistemas de relacionamento com cliente' },
+          { codigo: 'Financeiro', nome: 'Sistema Financeiro', descricao: 'Sistemas de gestão financeira' },
+          { codigo: 'E-commerce', nome: 'E-commerce', descricao: 'Plataformas de comércio eletrônico' },
+          { codigo: 'Contabil', nome: 'Sistema Contábil', descricao: 'Sistemas de contabilidade' },
+          { codigo: 'API', nome: 'API Genérica', descricao: 'APIs e serviços web genéricos' },
+          { codigo: 'Banco', nome: 'Sistema Bancário', descricao: 'Sistemas bancários e financeiros' },
+          { codigo: 'Logistica', nome: 'Sistema de Logística', descricao: 'Sistemas de gestão logística' }
+        ];
+        
+        this.tiposRequisicao = [
+          { codigo: 'GET', nome: 'GET', descricao: 'Buscar dados do sistema externo' },
+          { codigo: 'POST', nome: 'POST', descricao: 'Enviar dados para o sistema externo' },
+          { codigo: 'PUT', nome: 'PUT', descricao: 'Atualizar dados no sistema externo' },
+          { codigo: 'DELETE', nome: 'DELETE', descricao: 'Excluir dados do sistema externo' },
+          { codigo: 'PATCH', nome: 'PATCH', descricao: 'Atualização parcial de dados' }
+        ];
+        
+        this.tiposImportacao = [
+          { codigo: 'TOTAL', nome: 'Total', descricao: 'Substitui todos os dados (deleta e insere)' },
+          { codigo: 'INCREMENTAL', nome: 'Incremental', descricao: 'Importa apenas dados novos ou alterados' },
+          { codigo: 'UPSERT', nome: 'Upsert', descricao: 'Insere novos ou atualiza existentes' },
+          { codigo: 'APPEND', nome: 'Append', descricao: 'Apenas adiciona novos registros' }
+        ];
       }
     });
   }
@@ -123,6 +146,19 @@ export class IntegracoesFormComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Erro ao carregar tabelas:', error);
+        // Valores fixos como fallback
+        this.tabelasDisponiveis = [
+          { nome: 'users', descricao: 'Tabela de usuários do sistema', campos: ['id', 'email', 'full_name', 'is_active', 'is_superuser'] },
+          { nome: 'empresas', descricao: 'Tabela de empresas cadastradas', campos: ['id', 'razao_social', 'nome_fantasia', 'cnpj', 'inscricao_estadual'] },
+          { nome: 'clientes_fornecedores', descricao: 'Tabela de clientes e fornecedores', campos: ['id', 'nome', 'nome_fantasia', 'cpf_cnpj', 'email', 'telefone1', 'endereco'] },
+          { nome: 'categorias', descricao: 'Tabela de categorias para classificação', campos: ['id', 'nome', 'descricao', 'ativa'] },
+          { nome: 'contas_pagar', descricao: 'Tabela de contas a pagar', campos: ['id', 'descricao', 'fornecedor_id', 'categoria_id', 'valor_original', 'data_vencimento'] },
+          { nome: 'contas_receber', descricao: 'Tabela de contas a receber', campos: ['id', 'descricao', 'cliente', 'valor', 'data_vencimento', 'status'] },
+          { nome: 'contas_corrente', descricao: 'Tabela de contas correntes bancárias', campos: ['id', 'nome', 'banco', 'agencia', 'conta', 'saldo_atual'] },
+          { nome: 'pagamentos', descricao: 'Tabela de pagamentos realizados', campos: ['id', 'conta_pagar_id', 'valor', 'data_pagamento', 'tipo_pagamento'] },
+          { nome: 'integracoes', descricao: 'Tabela de configurações de integrações', campos: ['id', 'nome', 'tipo', 'base_url', 'tabela_destino', 'ativo'] },
+          { nome: 'integracoes_logs', descricao: 'Tabela de logs de execução das integrações', campos: ['id', 'integracao_id', 'data_execucao', 'status', 'mensagem'] }
+        ];
       }
     });
   }

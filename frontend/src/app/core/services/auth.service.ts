@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 export interface LoginRequest {
   username: string;
@@ -24,7 +25,7 @@ export interface User {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:8000';
+  private readonly API_URL = environment.apiUrl.replace('/api/v1', '');
   private readonly TOKEN_KEY = 'access_token';
   private readonly USER_KEY = 'user_data';
   
@@ -43,7 +44,7 @@ export class AuthService {
     loginData.append('grant_type', 'password');
 
     return this.http.post<LoginResponse>(
-      `${this.API_URL}/api/v1/auth/login`, 
+      `${environment.apiUrl}/auth/login`,
       loginData
     );
   }
@@ -59,7 +60,7 @@ export class AuthService {
     });
 
     return this.http.post<LoginResponse>(
-      `${this.API_URL}/api/v1/auth/login`, 
+      `${environment.apiUrl}/auth/login`,
       loginData,
       { headers }
     );
@@ -90,10 +91,21 @@ export class AuthService {
 
   private isTokenExpired(token: string): boolean {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return true;
+      }
+      
+      const payload = JSON.parse(atob(parts[1]));
+      if (!payload.exp) {
+        return false; // Se não tem expiração, considerar válido
+      }
+      
       const currentTime = Math.floor(Date.now() / 1000);
-      return payload.exp < currentTime;
-    } catch {
+      // Adicionar margem de 30 segundos para renovar antes da expiração
+      return (payload.exp - 30) <= currentTime;
+    } catch (error) {
+      console.error('Erro ao verificar expiração do token:', error);
       return true;
     }
   }
@@ -108,7 +120,7 @@ export class AuthService {
 
   getCurrentUser(): Observable<User> {
     return this.http.get<User>(
-      `${this.API_URL}/api/v1/users/me`,
+      `${environment.apiUrl}/users/me`,
       { headers: this.getAuthHeaders() }
     );
   }

@@ -1,21 +1,40 @@
+# FastAPI e servidor
 fastapi==0.110.0
 uvicorn[standard]==0.27.1
+
+# Base de dados
 sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
 alembic==1.13.1
+
+# Validação de dados
 pydantic==2.6.1
 pydantic-settings==2.1.0
+
+# Autenticação e segurança - VERSÕES COMPATÍVEIS
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# Upload de arquivos
 python-multipart==0.0.9
+
+# Configuração
 python-dotenv==1.0.1
+
+# Testes
 pytest==8.0.0
 pytest-asyncio==0.23.5
 httpx==0.26.0
+
+# Planilhas e dados
 openpyxl==3.1.2
 pandas==2.2.0
+
+# Cache e background tasks
 redis==5.0.1
 celery==5.3.6
+
+# Utilitários
 email-validator==2.1.0
 python-dateutil==2.8.2
-sqlalchemy>=2.0.0
