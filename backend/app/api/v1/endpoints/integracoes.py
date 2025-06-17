@@ -25,7 +25,6 @@ from app.schemas.integracao import (
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-@router.get("", response_model=dict)
 @router.get("/", response_model=dict)
 def read_integracoes(
     db: Session = Depends(deps.get_db),

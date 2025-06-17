@@ -45,7 +45,7 @@ def check_database_connection():
 def initialize_database():
     """Inicializar banco de dados com dados padrão"""
     try:
-        init_db(SessionLocal())
+        init_db()
         logger.info("🗃️ Banco de dados inicializado com sucesso!")
         return True
     except Exception as e:

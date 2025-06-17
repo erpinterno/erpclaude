@@ -47,19 +47,13 @@ export class AuthInterceptor implements HttpInterceptor {
           Authorization: `Bearer ${token}`
         }
       });
-    } else {
+    } else if (!isPublicUrl) {
       console.warn('❌ [Auth Interceptor] Token não encontrado ou inválido para:', req.url);
       console.warn('❌ [Auth Interceptor] Token:', !!token, 'Authenticated:', isAuthenticated);
-      // Para URLs que precisam de autenticação, redirecionar para login
-      if (!isPublicUrl) {
-        console.error('💥 [Auth Interceptor] Fazendo logout devido a token inválido');
-        this.authService.logout();
-        return throwError(() => new HttpErrorResponse({
-          status: 401,
-          statusText: 'Unauthorized',
-          error: { detail: 'Token de autorização necessário' }
-        }));
-      }
+      
+      // Deixar a requisição continuar sem token - o servidor retornará 401 se necessário
+      // O redirecionamento para login será feito apenas no handleError quando receber 401 do servidor
+      console.warn('⚠️ [Auth Interceptor] Requisição prosseguindo sem token - servidor decidirá se é necessário');
     }
 
     return next.handle(authReq).pipe(
